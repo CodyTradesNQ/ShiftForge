@@ -987,10 +987,11 @@ async function bootApp() {
 async function doSignOut() {
   sfConfirm('👋','Sign Out','Are you sure you want to sign out?', async ()=>{
     if(_sb) await _sb.auth.signOut();
-  _uid=null; _email=null;
-  document.getElementById('app').style.display='none';
-  document.getElementById('bottom-nav').style.display='none';
-  document.getElementById('auth-screen').style.display='flex';
+    _uid=null; _email=null;
+    document.getElementById('app').style.display='none';
+    document.getElementById('bottom-nav').style.display='none';
+    document.getElementById('auth-screen').style.display='flex';
+  },'danger');
 }
 
 // ══════════════════════════════════════════════════════════════════════
@@ -1236,12 +1237,15 @@ function saveShift() {
 }
 
 function deleteShift(id) {
-sfConfirm('🗑️','Delete Shift','This shift will be permanently removed.',()=>{ const s=D.shifts.find(x=>x.id===id);
-  if(s) D.xp=Math.max(0,D.xp-(s.xp||0));
-  D.shifts=D.shifts.filter(x=>x.id!==id);
-  D.level=calcLevel(D.xp);
-  save(); renderAll();
-},'danger'); }
+  sfConfirm('🗑️','Delete Shift','This shift will be permanently removed.', ()=>{
+    const s=D.shifts.find(x=>x.id===id);
+    if(s) D.xp=Math.max(0,D.xp-(s.xp||0));
+    D.shifts=D.shifts.filter(x=>x.id!==id);
+    D.level=calcLevel(D.xp);
+    save();
+    renderAll();
+  },'danger');
+}
 
 // ══════════════════════════════════════════════════════════════════════
 // RENDERING
