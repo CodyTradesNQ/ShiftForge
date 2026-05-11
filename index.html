@@ -431,6 +431,99 @@ body::before {
 }
 .signout-btn:hover { background:rgba(255,71,87,0.12); }
 
+
+/* ── CUSTOM DIALOG ── */
+#sf-dialog-overlay {
+  position:fixed; inset:0; z-index:1000;
+  background:rgba(0,0,0,0.75); backdrop-filter:blur(6px);
+  display:flex; align-items:center; justify-content:center;
+  padding:24px; opacity:0; transition:opacity 0.2s;
+  pointer-events:none;
+}
+#sf-dialog-overlay.show { opacity:1; pointer-events:all; }
+#sf-dialog-box {
+  background:var(--bg2); border:1px solid var(--border2);
+  border-radius:var(--r-lg); padding:28px 24px;
+  width:100%; max-width:340px;
+  transform:scale(0.92) translateY(10px);
+  transition:transform 0.25s cubic-bezier(0.34,1.56,0.64,1);
+  box-shadow:0 24px 60px rgba(0,0,0,0.6);
+}
+#sf-dialog-overlay.show #sf-dialog-box { transform:scale(1) translateY(0); }
+#sf-dialog-icon { font-size:36px; text-align:center; margin-bottom:12px; }
+#sf-dialog-title {
+  font-family:var(--font-display); font-size:22px;
+  letter-spacing:1px; text-align:center; margin-bottom:6px;
+}
+#sf-dialog-msg {
+  font-size:13px; font-family:var(--font-mono); color:var(--text2);
+  text-align:center; margin-bottom:22px; line-height:1.6;
+}
+#sf-dialog-btns { display:flex; gap:10px; }
+#sf-dialog-btns button {
+  flex:1; padding:12px; border:none; border-radius:8px;
+  font-size:14px; font-weight:600; font-family:var(--font-body);
+  cursor:pointer; transition:all 0.15s;
+}
+.sf-dlg-cancel { background:var(--bg3); color:var(--text2); border:1px solid var(--border2) !important; }
+.sf-dlg-confirm { background:linear-gradient(135deg,var(--purple),#4a2cb8); color:#fff; box-shadow:0 4px 16px rgba(124,92,252,0.3); }
+.sf-dlg-confirm.danger { background:linear-gradient(135deg,var(--red),#c0392b); box-shadow:0 4px 16px rgba(255,71,87,0.3); }
+.sf-dlg-confirm.success { background:linear-gradient(135deg,var(--green2),#007a33); }
+
+/* ── CLOCK WIDGET ── */
+#clock-widget {
+  background:linear-gradient(135deg,rgba(124,92,252,0.1),rgba(245,200,66,0.06));
+  border:1px solid rgba(124,92,252,0.25);
+  border-radius:var(--r-lg); padding:20px;
+  margin-bottom:14px; text-align:center;
+}
+#clock-time-display {
+  font-family:var(--font-display); font-size:56px;
+  letter-spacing:4px; line-height:1;
+  background:linear-gradient(135deg,var(--text),var(--text2));
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+}
+#clock-date-display {
+  font-size:11px; font-family:var(--font-mono); color:var(--text3);
+  letter-spacing:2px; text-transform:uppercase; margin:6px 0 16px;
+}
+#clock-elapsed {
+  font-family:var(--font-display); font-size:32px; letter-spacing:2px;
+  color:var(--green); margin-bottom:4px; display:none;
+}
+#clock-elapsed-label {
+  font-size:10px; font-family:var(--font-mono); color:var(--text3);
+  letter-spacing:2px; margin-bottom:14px; display:none;
+}
+.clock-btns { display:flex; gap:10px; justify-content:center; }
+.clock-btn {
+  flex:1; max-width:160px; padding:13px 16px; border:none;
+  border-radius:10px; font-family:var(--font-display);
+  font-size:18px; letter-spacing:2px; cursor:pointer;
+  transition:all 0.15s;
+}
+.clock-btn-in {
+  background:linear-gradient(135deg,var(--green2),#007a33);
+  color:#fff; box-shadow:0 4px 20px rgba(0,200,83,0.35);
+}
+.clock-btn-out {
+  background:linear-gradient(135deg,var(--red),#c0392b);
+  color:#fff; box-shadow:0 4px 20px rgba(255,71,87,0.35);
+}
+.clock-btn:active { transform:scale(0.96); }
+.clock-btn:disabled { opacity:0.4; cursor:not-allowed; transform:none; }
+#clock-status {
+  font-size:11px; font-family:var(--font-mono);
+  color:var(--text3); margin-top:12px; letter-spacing:1px;
+}
+#clock-status.clocked-in { color:var(--green); }
+.gps-badge {
+  display:inline-flex; align-items:center; gap:5px;
+  background:rgba(124,92,252,0.1); border:1px solid rgba(124,92,252,0.2);
+  border-radius:20px; padding:4px 10px; margin-top:8px;
+  font-size:10px; font-family:var(--font-mono); color:var(--purple2);
+}
+
 /* ── SCROLLBAR ── */
 ::-webkit-scrollbar { width:4px; }
 ::-webkit-scrollbar-track { background:transparent; }
@@ -543,6 +636,21 @@ body::before {
     </div>
 
     <!-- Log shift button -->
+
+    <!-- Clock In / Clock Out -->
+    <div id="clock-widget">
+      <div id="clock-time-display">00:00:00</div>
+      <div id="clock-date-display"></div>
+      <div id="clock-elapsed">00:00:00</div>
+      <div id="clock-elapsed-label">ELAPSED THIS SHIFT</div>
+      <div class="clock-btns">
+        <button class="clock-btn clock-btn-in" id="btn-clock-in" onclick="doClock('in')">CLOCK IN</button>
+        <button class="clock-btn clock-btn-out" id="btn-clock-out" onclick="doClock('out')" disabled>CLOCK OUT</button>
+      </div>
+      <div id="clock-status">Not clocked in</div>
+      <div class="gps-badge">📍 GPS auto-clock — coming soon</div>
+    </div>
+
     <button class="log-btn" onclick="openLogModal()">
       ⚡ LOG SHIFT
     </button>
@@ -726,6 +834,17 @@ body::before {
   </div>
 </div>
 
+
+<!-- ══ CUSTOM DIALOG ══ -->
+<div id="sf-dialog-overlay">
+  <div id="sf-dialog-box">
+    <div id="sf-dialog-icon"></div>
+    <div id="sf-dialog-title"></div>
+    <div id="sf-dialog-msg"></div>
+    <div id="sf-dialog-btns"></div>
+  </div>
+</div>
+
 <!-- Level up toast -->
 <div id="levelup-toast">🏆 LEVEL UP!</div>
 
@@ -862,11 +981,12 @@ async function bootApp() {
   document.getElementById('s-tax').value  = D.settings.taxRate||0;
 
   renderAll();
+  startClock();
 }
 
 async function doSignOut() {
-  if(!confirm('Sign out of ShiftForge?')) return;
-  if(_sb) await _sb.auth.signOut();
+  sfConfirm('👋','Sign Out','Are you sure you want to sign out?', async ()=>{
+    if(_sb) await _sb.auth.signOut();
   _uid=null; _email=null;
   document.getElementById('app').style.display='none';
   document.getElementById('bottom-nav').style.display='none';
@@ -1077,7 +1197,7 @@ function updatePreview() {
 function saveShift() {
   const date=document.getElementById('log-date').value;
   const hrs=parseFloat(document.getElementById('log-hours').value)||0;
-  if(!date||!hrs){ alert('Please enter a date and hours.'); return; }
+  if(!date||!hrs){ sfAlert('⚠️','Missing Info','Please enter a date and hours worked.'); return; }
 
   const rate=parseFloat(document.getElementById('log-rate').value)||D.settings.rate||0;
   const pay=hrs*rate;
@@ -1116,13 +1236,12 @@ function saveShift() {
 }
 
 function deleteShift(id) {
-  if(!confirm('Delete this shift?')) return;
-  const s=D.shifts.find(x=>x.id===id);
+sfConfirm('🗑️','Delete Shift','This shift will be permanently removed.',()=>{ const s=D.shifts.find(x=>x.id===id);
   if(s) D.xp=Math.max(0,D.xp-(s.xp||0));
   D.shifts=D.shifts.filter(x=>x.id!==id);
   D.level=calcLevel(D.xp);
   save(); renderAll();
-}
+},'danger'); }
 
 // ══════════════════════════════════════════════════════════════════════
 // RENDERING
@@ -1314,6 +1433,128 @@ document.getElementById('log-rate').addEventListener('input', updatePreview);
 document.getElementById('log-modal').addEventListener('click', function(e){
   if(e.target===this) closeModal();
 });
+
+
+// ══════════════════════════════════════════════════════════════════════
+// CUSTOM DIALOG SYSTEM
+// ══════════════════════════════════════════════════════════════════════
+function sfDialog({icon, title, msg, buttons}) {
+  const ov  = document.getElementById('sf-dialog-overlay');
+  document.getElementById('sf-dialog-icon').textContent  = icon||'';
+  document.getElementById('sf-dialog-title').textContent = title||'';
+  document.getElementById('sf-dialog-msg').textContent   = msg||'';
+  document.getElementById('sf-dialog-btns').innerHTML = buttons.map((b,i)=>`
+    <button class="${b.cls||''}" id="sf-dlg-btn-${i}">${b.label}</button>`).join('');
+  buttons.forEach((b,i)=>{
+    document.getElementById('sf-dlg-btn-'+i).onclick = ()=>{ sfDialogClose(); if(b.action) b.action(); };
+  });
+  ov.classList.add('show');
+}
+function sfDialogClose() {
+  document.getElementById('sf-dialog-overlay').classList.remove('show');
+}
+function sfAlert(icon, title, msg) {
+  sfDialog({ icon, title, msg, buttons:[
+    {label:'OK', cls:'sf-dlg-confirm', action:null}
+  ]});
+}
+function sfConfirm(icon, title, msg, onConfirm, type='default') {
+  sfDialog({ icon, title, msg, buttons:[
+    {label:'Cancel', cls:'sf-dlg-cancel', action:null},
+    {label:'Confirm', cls:`sf-dlg-confirm ${type==='danger'?'danger':type==='success'?'success':''}`, action:onConfirm}
+  ]});
+}
+// Close on overlay click
+document.getElementById('sf-dialog-overlay').addEventListener('click', function(e){
+  if(e.target===this) sfDialogClose();
+});
+
+// ══════════════════════════════════════════════════════════════════════
+// LIVE CLOCK
+// ══════════════════════════════════════════════════════════════════════
+let clockInterval = null;
+let clockInTime   = null; // Date object when clocked in
+let clockElapsed  = 0;    // seconds elapsed
+
+function tickClock() {
+  const now = new Date();
+  const hh  = String(now.getHours()).padStart(2,'0');
+  const mm  = String(now.getMinutes()).padStart(2,'0');
+  const ss  = String(now.getSeconds()).padStart(2,'0');
+  const el  = document.getElementById('clock-time-display');
+  if(el) el.textContent = `${hh}:${mm}:${ss}`;
+
+  const dateEl = document.getElementById('clock-date-display');
+  if(dateEl) dateEl.textContent = now.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+
+  if(clockInTime) {
+    const diff = Math.floor((now - clockInTime)/1000);
+    const eh   = String(Math.floor(diff/3600)).padStart(2,'0');
+    const em   = String(Math.floor((diff%3600)/60)).padStart(2,'0');
+    const es   = String(diff%60).padStart(2,'0');
+    const elapsed = document.getElementById('clock-elapsed');
+    if(elapsed) elapsed.textContent = `${eh}:${em}:${es}`;
+  }
+}
+
+function startClock() {
+  tickClock();
+  if(clockInterval) clearInterval(clockInterval);
+  clockInterval = setInterval(tickClock, 1000);
+}
+
+function doClock(action) {
+  if(action === 'in') {
+    clockInTime = new Date();
+    // Update UI
+    document.getElementById('btn-clock-in').disabled  = true;
+    document.getElementById('btn-clock-out').disabled = false;
+    document.getElementById('clock-elapsed').style.display       = 'block';
+    document.getElementById('clock-elapsed-label').style.display = 'block';
+    document.getElementById('clock-elapsed').textContent         = '00:00:00';
+    const status = document.getElementById('clock-status');
+    status.textContent = '🟢 Clocked in at ' + clockInTime.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+    status.className   = 'clock-status clocked-in';
+    // Animate the clock in button briefly
+    const btn = document.getElementById('btn-clock-in');
+    btn.textContent = 'CLOCKED IN ✓';
+    // Pulse the time green
+    const timeEl = document.getElementById('clock-time-display');
+    timeEl.style.background = 'linear-gradient(135deg,var(--green),var(--teal))';
+    timeEl.style.webkitBackgroundClip = 'text';
+  } else {
+    if(!clockInTime) return;
+    const clockOutTime = new Date();
+    const totalSecs    = Math.floor((clockOutTime - clockInTime)/1000);
+    const hrs          = +(totalSecs/3600).toFixed(2);
+    const startStr     = clockInTime.toTimeString().slice(0,5);
+    const endStr       = clockOutTime.toTimeString().slice(0,5);
+    const dateStr      = clockInTime.toISOString().slice(0,10);
+
+    // Pre-fill the log modal with clocked data
+    openLogModal();
+    document.getElementById('log-date').value  = dateStr;
+    document.getElementById('log-start').value = startStr;
+    document.getElementById('log-end').value   = endStr;
+    document.getElementById('log-hours').value = hrs;
+    updatePreview();
+
+    // Reset clock UI
+    clockInTime = null;
+    document.getElementById('btn-clock-in').disabled  = false;
+    document.getElementById('btn-clock-out').disabled = true;
+    document.getElementById('btn-clock-in').textContent = 'CLOCK IN';
+    document.getElementById('clock-elapsed').style.display       = 'none';
+    document.getElementById('clock-elapsed-label').style.display = 'none';
+    const status = document.getElementById('clock-status');
+    status.textContent = 'Shift ended — confirm below';
+    status.className   = 'clock-status';
+    const timeEl = document.getElementById('clock-time-display');
+    timeEl.style.background = 'linear-gradient(135deg,var(--text),var(--text2))';
+    timeEl.style.webkitBackgroundClip = 'text';
+  }
+}
+
 
 // ══════════════════════════════════════════════════════════════════════
 // INIT
