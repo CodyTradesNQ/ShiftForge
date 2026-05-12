@@ -789,7 +789,8 @@ html.theme-pro .kpi-card { border-left: 2px solid #222; }
 
 /* ── Misc ── */
 html.theme-pro #streak-flame,
-html.theme-pro .log-btn-icon { display: none; }
+html.theme-pro .log-btn-icon,
+html.theme-pro .update-icon { display: none; }
 html.theme-pro .log-btn { justify-content: center; }
 html.theme-pro .mob-header {
   backdrop-filter: none;
@@ -1150,8 +1151,7 @@ html.theme-pro .bottom-nav {
         <div id="s-sync" style="font-size:11px;font-family:var(--font-mono);color:var(--green);">✓ synced</div>
       </div>
       <button class="signout-btn" onclick="doSignOut()">Sign Out</button>
-      <button class="signout-btn" style="border-color:var(--purple);color:var(--purple2);background:rgba(124,92,252,0.05);margin-top:4px;" onclick="checkForUpdates()">🔄 Check for Updates</button>
-      <div style="font-size:9px;font-family:var(--font-mono);color:var(--text3);text-align:center;margin-top:4px;" id="version-display"></div>
+      <button class="signout-btn" style="border-color:var(--purple);color:var(--purple2);background:rgba(124,92,252,0.05);margin-top:4px;" onclick="checkForUpdates()"><span class="update-icon">🔄</span> Check for Updates</button>
       <div style="border-top:1px solid var(--border);margin:14px 0;padding-top:6px;">
         <div style="font-size:9px;letter-spacing:2.5px;text-transform:uppercase;font-family:var(--font-mono);color:var(--text3);margin-bottom:8px;text-align:center;">⚠️ Danger Zone</div>
         <button class="signout-btn" style="border-color:var(--red);" onclick="sfConfirm('⚠️','Reset All Data','This will permanently delete all shifts, XP, achievements, and settings. This cannot be undone.',resetAllData,'danger')">Reset All Data</button>
@@ -1287,7 +1287,6 @@ const SB_URL = 'https://yimlafxaswzrccnfzrnl.supabase.co';
 const SB_KEY = 'sb_publishable_xH6u9pPm1InQdZVOgrb4IA_5vsxX3GG';
 let _sb = null, _uid = null, _email = null, _saveTimer = null;
 let _authMode = 'signin';
-const APP_VERSION = '2026-05-11';
 
 // ======================================================================
 // DATA
@@ -1373,11 +1372,10 @@ function checkForUpdates() {
   fetch(window.location.href + '?v=' + Date.now())
     .then(r => r.text())
     .then(html => {
-      const match = html.match(/APP_VERSION\s*=\s*['"]([^'"]+)['"]/);
-      if (match && match[1] !== APP_VERSION) {
-        sfConfirm('🔄', 'Update Available', 'A newer version (v' + match[1] + ') is available. Reload now?', () => window.location.reload());
+      if (html === document.documentElement.outerHTML) {
+        sfAlert('✅', 'Up to Date', 'You are on the latest version.');
       } else {
-        sfAlert('✅', 'Up to Date', 'You are on the latest version (v' + APP_VERSION + ').');
+        sfConfirm('🔄', 'Update Available', 'A newer version is available. Reload now?', () => window.location.reload());
       }
     })
     .catch(() => sfAlert('⚠️', 'Check Failed', 'Could not check for updates. Check your connection.'));
@@ -2343,8 +2341,6 @@ function renderSettings() {
   document.getElementById('gps-detail').style.display = enabled ? 'block' : 'none';
   updateGPSToggleUI();
   applyTheme(D.settings.theme);
-  const verEl = document.getElementById('version-display');
-  if(verEl) verEl.textContent = 'v' + APP_VERSION;
 }
 
 // ======================================================================
