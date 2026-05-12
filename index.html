@@ -1369,13 +1369,18 @@ function saveAllSettings() {
 }
 
 function checkForUpdates() {
-  fetch(window.location.href + '?v=' + Date.now())
+  fetch(window.location.href + '?v=' + Date.now(), { cache: 'no-store' })
     .then(r => r.text())
     .then(html => {
-      if (html === document.documentElement.outerHTML) {
-        sfAlert('✅', 'Up to Date', 'You are on the latest version.');
-      } else {
+      const extract = src => {
+        const style = (src.match(/<style>([\s\S]*?)<\/style>/) || [])[1] || '';
+        const body = (src.match(/<body>([\s\S]*?)<\/body>/) || [])[1] || '';
+        return style + body;
+      };
+      if (extract(html) !== extract(document.documentElement.outerHTML)) {
         sfConfirm('🔄', 'Update Available', 'A newer version is available. Reload now?', () => window.location.reload());
+      } else {
+        sfAlert('✅', 'Up to Date', 'You are on the latest version.');
       }
     })
     .catch(() => sfAlert('⚠️', 'Check Failed', 'Could not check for updates. Check your connection.'));
