@@ -1,16 +1,9 @@
-const CACHE = 'shiftforge-v1';
-const ASSETS = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/icon.png'
-];
+const CACHE = 'shiftforge-v3';
+const STATIC_ASSETS = ['/manifest.json','/icon.png'];
 
 self.addEventListener('install', e => {
   self.skipWaiting();
-  e.waitUntil(
-    caches.open(CACHE).then(c => c.addAll(ASSETS))
-  );
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(STATIC_ASSETS)));
 });
 
 self.addEventListener('activate', e => {
@@ -23,8 +16,14 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
+  if (e.request.mode === 'navigate') {
+    e.respondWith(fetch(e.request));
+    return;
+  }
   e.respondWith(
-    caches.match(e.request).then(r => r || fetch(e.request).catch(() => new Response('Offline', {status:503})))
+    fetch(e.request).catch(() =>
+      caches.match(e.request).then(r => r || new Response('', {status:404}))
+    )
   );
 });
 
