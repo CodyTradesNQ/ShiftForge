@@ -1287,6 +1287,7 @@ const SB_URL = 'https://yimlafxaswzrccnfzrnl.supabase.co';
 const SB_KEY = 'sb_publishable_xH6u9pPm1InQdZVOgrb4IA_5vsxX3GG';
 let _sb = null, _uid = null, _email = null, _saveTimer = null;
 let _authMode = 'signin';
+localStorage.removeItem('sf_source_hash');
 
 // ======================================================================
 // DATA
@@ -1372,18 +1373,26 @@ function checkForUpdates() {
   fetch(window.location.href + '?v=' + Date.now(), { cache: 'no-store' })
     .then(r => r.text())
     .then(html => {
-      const extract = src => {
-        const style = (src.match(/<style>([\s\S]*?)<\/style>/) || [])[1] || '';
-        const body = (src.match(/<body>([\s\S]*?)<\/body>/) || [])[1] || '';
-        return style + body;
-      };
-      if (extract(html) !== extract(document.documentElement.outerHTML)) {
+      const newKey = simpleHash(html);
+      const oldKey = localStorage.getItem('sf_source_hash');
+      if (oldKey && oldKey !== newKey) {
+        localStorage.setItem('sf_source_hash', newKey);
         sfConfirm('🔄', 'Update Available', 'A newer version is available. Reload now?', () => window.location.reload());
       } else {
+        if (!oldKey) localStorage.setItem('sf_source_hash', newKey);
         sfAlert('✅', 'Up to Date', 'You are on the latest version.');
       }
     })
     .catch(() => sfAlert('⚠️', 'Check Failed', 'Could not check for updates. Check your connection.'));
+}
+
+function simpleHash(str) {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) - hash) + str.charCodeAt(i);
+    hash |= 0;
+  }
+  return hash.toString(36);
 }
 
 // ======================================================================
