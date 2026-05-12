@@ -8,6 +8,7 @@
 <meta name="apple-mobile-web-app-title" content="ShiftForge">
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="manifest" href="/manifest.json">
+<link rel="icon" type="image/svg+xml" href="/icon.svg">
 <link rel="apple-touch-icon" href="/icon.svg">
 <title>ShiftForge — Work Hard. Level Up.</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -453,40 +454,57 @@ body::before {
 /* ── CUSTOM DIALOG ── */
 #sf-dialog-overlay {
   position:fixed; inset:0; z-index:1000;
-  background:rgba(0,0,0,0.75); backdrop-filter:blur(6px);
+  background:rgba(0,0,0,0.8); backdrop-filter:blur(10px);
   display:flex; align-items:center; justify-content:center;
-  padding:24px; opacity:0; transition:opacity 0.2s;
+  padding:24px; opacity:0; transition:opacity 0.25s;
   pointer-events:none;
 }
 #sf-dialog-overlay.show { opacity:1; pointer-events:all; }
 #sf-dialog-box {
-  background:var(--bg2); border:1px solid var(--border2);
-  border-radius:var(--r-lg); padding:28px 24px;
+  background:linear-gradient(145deg, #0e0e1a, #141428);
+  border:1px solid rgba(124,92,252,0.25);
+  border-radius:var(--r-lg); padding:0;
   width:100%; max-width:340px;
-  transform:scale(0.92) translateY(10px);
-  transition:transform 0.25s cubic-bezier(0.34,1.56,0.64,1);
-  box-shadow:0 24px 60px rgba(0,0,0,0.6);
+  transform:scale(0.9) translateY(12px);
+  transition:transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  box-shadow:0 24px 60px rgba(0,0,0,0.6), 0 0 40px rgba(124,92,252,0.1);
+  overflow:hidden;
 }
 #sf-dialog-overlay.show #sf-dialog-box { transform:scale(1) translateY(0); }
-#sf-dialog-icon { font-size:36px; text-align:center; margin-bottom:12px; }
+#sf-dialog-brand {
+  background:linear-gradient(135deg, rgba(124,92,252,0.15), rgba(245,200,66,0.05));
+  border-bottom:1px solid rgba(124,92,252,0.15);
+  padding:10px 24px; text-align:center;
+}
+#sf-dialog-brand-txt {
+  font-family:var(--font-display); font-size:13px; letter-spacing:3px;
+  background:linear-gradient(90deg,var(--gold),var(--purple2));
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+}
+#sf-dialog-body { padding:24px 24px 20px; }
+#sf-dialog-icon { font-size:40px; text-align:center; margin-bottom:10px; }
 #sf-dialog-title {
-  font-family:var(--font-display); font-size:22px;
-  letter-spacing:1px; text-align:center; margin-bottom:6px;
+  font-family:var(--font-display); font-size:24px; letter-spacing:1px;
+  text-align:center; margin-bottom:6px; color:var(--text);
 }
 #sf-dialog-msg {
   font-size:13px; font-family:var(--font-mono); color:var(--text2);
-  text-align:center; margin-bottom:22px; line-height:1.6;
+  text-align:center; margin-bottom:20px; line-height:1.7;
 }
-#sf-dialog-btns { display:flex; gap:10px; }
+#sf-dialog-btns { display:flex; gap:10px; padding:0 24px 24px; }
 #sf-dialog-btns button {
-  flex:1; padding:12px; border:none; border-radius:8px;
-  font-size:14px; font-weight:600; font-family:var(--font-body);
-  cursor:pointer; transition:all 0.15s;
+  flex:1; padding:13px; border:none; border-radius:10px;
+  font-size:14px; font-weight:700; font-family:var(--font-body);
+  cursor:pointer; transition:all 0.15s; letter-spacing:0.3px;
 }
 .sf-dlg-cancel { background:var(--bg3); color:var(--text2); border:1px solid var(--border2) !important; }
-.sf-dlg-confirm { background:linear-gradient(135deg,var(--purple),#4a2cb8); color:#fff; box-shadow:0 4px 16px rgba(124,92,252,0.3); }
+.sf-dlg-cancel:hover { background:var(--bg4); }
+.sf-dlg-confirm { background:linear-gradient(135deg,var(--purple),#4a2cb8); color:#fff; box-shadow:0 4px 20px rgba(124,92,252,0.35); }
+.sf-dlg-confirm:hover { transform:translateY(-1px); box-shadow:0 6px 24px rgba(124,92,252,0.45); }
 .sf-dlg-confirm.danger { background:linear-gradient(135deg,var(--red),#c0392b); box-shadow:0 4px 16px rgba(255,71,87,0.3); }
-.sf-dlg-confirm.success { background:linear-gradient(135deg,var(--green2),#007a33); }
+.sf-dlg-confirm.danger:hover { box-shadow:0 6px 24px rgba(255,71,87,0.4); }
+.sf-dlg-confirm.success { background:linear-gradient(135deg,var(--green2),#007a33); box-shadow:0 4px 16px rgba(0,200,83,0.3); }
+.sf-dlg-confirm.success:hover { box-shadow:0 6px 24px rgba(0,200,83,0.4); }
 
 /* ── CLOCK WIDGET ── */
 #clock-widget {
@@ -927,9 +945,12 @@ body::before {
 <!-- ══ CUSTOM DIALOG ══ -->
 <div id="sf-dialog-overlay">
   <div id="sf-dialog-box">
-    <div id="sf-dialog-icon"></div>
-    <div id="sf-dialog-title"></div>
-    <div id="sf-dialog-msg"></div>
+    <div id="sf-dialog-brand"><div id="sf-dialog-brand-txt">⚡ SHIFTFORGE</div></div>
+    <div id="sf-dialog-body">
+      <div id="sf-dialog-icon"></div>
+      <div id="sf-dialog-title"></div>
+      <div id="sf-dialog-msg"></div>
+    </div>
     <div id="sf-dialog-btns"></div>
   </div>
 </div>
@@ -1081,10 +1102,8 @@ async function bootApp() {
   document.getElementById('app').style.display='block';
   document.getElementById('bottom-nav').style.display='flex';
 
-  // Request notification permission
-  if('Notification' in window && Notification.permission === 'default') {
-    Notification.requestPermission();
-  }
+  // Prompt for notification permission with in-app dialog
+  setTimeout(() => promptNotifications(), 1500);
 
   // Update settings UI
   document.getElementById('s-email-disp').textContent = _email||'';
@@ -1757,7 +1776,8 @@ function renderHistory() {
 }
 
 // Filter change via delegation (selects are recreated on populate)
-document.getElementById('history-filters').addEventListener('change', function(e) {
+const hfEl = document.getElementById('history-filters');
+if(hfEl) hfEl.addEventListener('change', function(e) {
   if(e.target.tagName === 'SELECT') applyHistoryFilter();
 });
 
@@ -1854,7 +1874,7 @@ document.getElementById('map-modal').addEventListener('click', function(e){
 // ======================================================================
 // CUSTOM DIALOG SYSTEM
 // ======================================================================
-function sfDialog({icon, title, msg, buttons}) {
+function sfDialog({icon, title, msg, buttons, brand=true}) {
   const ov  = document.getElementById('sf-dialog-overlay');
   document.getElementById('sf-dialog-icon').textContent  = icon||'';
   document.getElementById('sf-dialog-title').textContent = title||'';
@@ -1864,6 +1884,8 @@ function sfDialog({icon, title, msg, buttons}) {
   buttons.forEach((b,i)=>{
     document.getElementById('sf-dlg-btn-'+i).onclick = ()=>{ sfDialogClose(); if(b.action) b.action(); };
   });
+  const brandEl = document.getElementById('sf-dialog-brand');
+  if(brandEl) brandEl.style.display = brand ? 'block' : 'none';
   ov.classList.add('show');
 }
 function sfDialogClose() {
@@ -1993,12 +2015,25 @@ function doClock(action) {
 // PWA NOTIFICATIONS
 // ======================================================================
 function sendNotification(title, body) {
-  if(!('Notification' in window)) return;
-  if(Notification.permission === 'granted') {
-    try { new Notification(title, { body, icon:'/icon.svg', badge:'/icon.svg', tag:'shiftforge' }); } catch(e) {}
-  } else if(Notification.permission !== 'denied') {
-    Notification.requestPermission();
-  }
+  try {
+    if(!('Notification' in window) || Notification.permission!=='granted') return;
+    new Notification(title, { body, icon:'/icon.svg', tag:'shiftforge' });
+  } catch(e) {}
+}
+
+function promptNotifications() {
+  if(!('Notification' in window) || Notification.permission!=='default') return;
+  sfDialog({
+    icon:'🔔',
+    title:'Stay in the Loop',
+    msg:'ShiftForge can notify you when you clock in, clock out, and save shifts. Want to enable?',
+    buttons:[
+      {label:'Not Now', cls:'sf-dlg-cancel', action:null},
+      {label:'Enable ✅', cls:'sf-dlg-confirm success', action:()=>{
+        try { Notification.requestPermission(); } catch(e){}
+      }}
+    ]
+  });
 }
 
 // ======================================================================
