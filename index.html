@@ -613,14 +613,44 @@ html.theme-pro {
   --red: #6a6a6a;
   --orange: #808080;
   --teal: #666666;
-  --font-body: 'Space Grotesk', 'Inter', sans-serif;
-  --font-weight: 300;
+  --font-body: 'Space Grotesk', sans-serif;
+  --font-display: 'Space Grotesk', sans-serif;
 }
 html.theme-pro .mob-header-title,
 html.theme-pro .auth-logo-name,
-html.theme-pro #clock-time-display,
-html.theme-pro .kpi-value {
+html.theme-pro .section-title,
+html.theme-pro .modal-title,
+html.theme-pro .sf-dlg-brand-txt,
+html.theme-pro .goal-label,
+html.theme-pro #home-greeting {
+  font-family: var(--font-display);
   font-weight: 300;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+html.theme-pro #clock-time-display,
+html.theme-pro .kpi-value,
+html.theme-pro .streak-number,
+html.theme-pro .shift-hours,
+html.theme-pro .xp-level,
+html.theme-pro .milestone-pct {
+  font-family: var(--font-body);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+html.theme-pro .xp-fill {
+  background: linear-gradient(90deg, #444, #888) !important;
+  box-shadow: none !important;
+}
+html.theme-pro .log-btn,
+html.theme-pro .btn-primary,
+html.theme-pro .sf-dlg-confirm {
+  background: #222 !important;
+  box-shadow: none !important;
+}
+html.theme-pro .clock-btn-in,
+html.theme-pro .clock-btn-out {
+  box-shadow: none !important;
 }
 </style>
 </head>
