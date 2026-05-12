@@ -223,10 +223,7 @@ body::before {
   box-shadow: 0 0 10px rgba(124,92,252,0.5);
 }
 .goal-label { font-family:var(--font-display); font-size:20px; color:var(--orange); letter-spacing:1px; }
-.goal-fill-red { background: linear-gradient(90deg, #ff4757, #ff6b81) !important; box-shadow: 0 0 10px rgba(255,71,87,0.5) !important; }
-.goal-fill-orange { background: linear-gradient(90deg, #ff8c42, #ffa94d) !important; box-shadow: 0 0 10px rgba(255,140,66,0.5) !important; }
-.goal-fill-yellow { background: linear-gradient(90deg, #f5c842, #ffd93d) !important; box-shadow: 0 0 10px rgba(245,200,66,0.5) !important; }
-.goal-fill-green { background: linear-gradient(90deg, #00c853, #00e676) !important; box-shadow: 0 0 10px rgba(0,200,83,0.5) !important; }
+
 @keyframes confettiFall { 0%{transform:translateY(-10px) rotate(0deg);opacity:1} 100%{transform:translateY(100vh) rotate(720deg);opacity:0} }
 .confetti-piece {
   position:absolute; width:10px; height:10px; border-radius:2px;
@@ -786,23 +783,6 @@ html.theme-pro .btn-primary {
 html.theme-pro #goal-card {
   border-color: rgba(255,255,255,0.06) !important;
 }
-html.theme-pro .goal-fill-red {
-  background: #5a3a3a !important;
-  box-shadow: none !important;
-}
-html.theme-pro .goal-fill-orange {
-  background: #6a5030 !important;
-  box-shadow: none !important;
-}
-html.theme-pro .goal-fill-yellow {
-  background: #8a7a40 !important;
-  box-shadow: none !important;
-}
-html.theme-pro .goal-fill-green {
-  background: #3a6a3a !important;
-  box-shadow: none !important;
-}
-
 /* ── XP bar ── */
 html.theme-pro .xp-fill {
   background: #333 !important;
@@ -2046,6 +2026,28 @@ function renderAll() {
   renderSettings();
 }
 
+function updateGoalBar() {
+  const goal=D.settings.weeklyGoal||40;
+  const weekShiftsGoal=shiftsByPeriod('week');
+  let weekHrs=weekShiftsGoal.reduce((s,x)=>s+parseFloat(x.hours||0),0);
+  if(clockInTime){const now=new Date();weekHrs+=(now-clockInTime)/3600000;}
+  const goalPct=Math.min(100,(weekHrs/goal)*100);
+  const goalFill=document.getElementById('goal-fill');
+  const goalEl=document.getElementById('goal-card');
+  if(goalFill){
+    goalFill.style.width=goalPct+'%';
+    goalFill.className='xp-fill';
+    const hue=Math.min(120,(goalPct/100)*120);
+    goalFill.style.setProperty('background',`linear-gradient(90deg,hsl(${hue*0.8},80%,45%),hsl(${hue},85%,55%))`,'important');
+    goalFill.style.setProperty('box-shadow',`0 0 10px hsla(${hue},80%,50%,0.5)`,'important');
+  }
+  if(goalEl) goalEl.style.borderColor=`hsla(${Math.min(120,(goalPct/100)*120)},80%,50%,0.3)`;
+  document.getElementById('goal-next-display').textContent=`${fmtHrs(weekHrs)} / ${fmtHrs(goal)}`;
+  document.getElementById('goal-pct').textContent=Math.round(goalPct)+'%';
+  document.getElementById('goal-pct').style.color=`hsl(${Math.min(120,(goalPct/100)*120)},80%,55%)`;
+  return{goalPct,weekHrs,goal};
+}
+
 function renderHome() {
   const name=D.settings.name||'Champ';
   const hour=new Date().getHours();
@@ -2053,39 +2055,11 @@ function renderHome() {
   document.getElementById('home-greeting').textContent=`${greeting}, ${name.toUpperCase()}`;
   document.getElementById('home-date').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
 
-  // Weekly Goal Bar
-  const goal = D.settings.weeklyGoal || 40;
-  const weekShiftsGoal = shiftsByPeriod('week');
-  const weekHrs = weekShiftsGoal.reduce((s,x)=>s+parseFloat(x.hours||0),0);
-  const goalPct = Math.min(100, (weekHrs / goal) * 100);
-  const goalFill = document.getElementById('goal-fill');
-  const goalEl = document.getElementById('goal-card');
-  if(goalFill) {
-    goalFill.style.width = goalPct+'%';
-    goalFill.className = 'xp-fill';
-    if(goalPct >= 100) goalFill.classList.add('goal-fill-green');
-    else if(goalPct >= 75) goalFill.classList.add('goal-fill-yellow');
-    else if(goalPct >= 50) goalFill.classList.add('goal-fill-orange');
-    else goalFill.classList.add('goal-fill-red');
-  }
-  if(goalEl) {
-    if(goalPct >= 100) goalEl.style.borderColor = 'rgba(0,230,118,0.3)';
-    else if(goalPct >= 75) goalEl.style.borderColor = 'rgba(245,200,66,0.3)';
-    else if(goalPct >= 50) goalEl.style.borderColor = 'rgba(255,140,66,0.3)';
-    else goalEl.style.borderColor = 'rgba(255,71,87,0.3)';
-  }
-  document.getElementById('goal-next-display').textContent = `${fmtHrs(weekHrs)} / ${fmtHrs(goal)}`;
-  document.getElementById('goal-pct').textContent = Math.round(goalPct)+'%';
-  document.getElementById('goal-pct').style.color = goalPct>=100?'var(--green)':goalPct>=75?'var(--gold)':goalPct>=50?'var(--orange)':'var(--red)';
-  document.getElementById('goal-remaining').textContent = goalPct>=100?'Goal reached! 🎉':`${fmtHrs(goal-weekHrs)} to goal`;
+  const {goalPct,weekHrs,goal}=updateGoalBar();
+  document.getElementById('goal-remaining').textContent=goalPct>=100?'Goal reached! 🎉':`${fmtHrs(Math.max(0,goal-weekHrs))} to goal`;
 
-  // Goal celebration
-  if(goalPct >= 100 && !_goalCelebrated) {
-    _goalCelebrated = true;
-    showGoalCelebration();
-  } else if(goalPct < 100) {
-    _goalCelebrated = false;
-  }
+  if(goalPct>=100&&!_goalCelebrated){_goalCelebrated=true;showGoalCelebration();}
+  else if(goalPct<100)_goalCelebrated=false;
 
   // Header level
   const {lvl} = xpProgress(D.xp);
@@ -2682,6 +2656,8 @@ function tickClock() {
     const earned = (rate / 3600) * diff;
     const moneyEl = document.getElementById('clock-running-money');
     if(moneyEl) moneyEl.textContent = fmt(earned);
+
+    updateGoalBar();
   }
 }
 
