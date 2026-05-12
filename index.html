@@ -2677,9 +2677,11 @@ function startClock() {
   clockInterval = setInterval(tickClock, 1000);
 }
 
-// ── Cross-device clock sync (Supabase Realtime Broadcast) ──
+// ── Cross-device clock sync ──
 let _deviceId = null;
-let _clockChannel = null;
+let _clockBC = null;
+let _clockPollTimer = null;
+let _clockLastState = null; // last known remote state fingerprint
 
 function getDeviceId() {
   if(!_deviceId) {
@@ -2690,23 +2692,52 @@ function getDeviceId() {
 }
 
 function initClockSync() {
-  if(!_sb || !_uid || _clockChannel) return;
-  try {
-    _clockChannel = _sb.channel('clock-sync');
-    _clockChannel.on('broadcast', {event:'clock'}, p => {
-      if(p.user_id !== _uid || p.device === getDeviceId()) return;
-      if(p.action==='in' && !clockInTime) doClock('in','remote');
-      else if(p.action==='out' && clockInTime) doClock('out','remote');
-    });
-    _clockChannel.subscribe();
-  } catch(e) { console.warn('Clock sync init failed:', e); }
+  // Cross-tab sync (same browser, different tabs)
+  if(typeof BroadcastChannel!=='undefined') try {
+    _clockBC = new BroadcastChannel('shiftforge-clock');
+    _clockBC.onmessage = e => {
+      if(e.data.uid!==_uid || e.data.device===getDeviceId()) return;
+      if(e.data.action==='in' && !clockInTime) doClock('in','remote');
+      else if(e.data.action==='out' && clockInTime) doClock('out','remote');
+    };
+  } catch(e) {}
+
+  // Cross-device polling via Supabase sf_data
+  if(_sb && _uid) clockPoll();
+}
+
+function clockPoll() {
+  clearTimeout(_clockPollTimer);
+  if(!_sb || !_uid) return;
+  _clockPollTimer = setTimeout(async () => {
+    try {
+      const {data} = await _sb.from('sf_data').select('payload').eq('id',_uid).maybeSingle();
+      if(data?.payload?._clockState) {
+        const r = data.payload._clockState;
+        const fp = (r.active?'1':'0')+':'+(r.time||'')+':'+(r.device||'');
+        if(fp !== _clockLastState) {
+          _clockLastState = fp;
+          if(r.active && !clockInTime && r.device!==getDeviceId()) {
+            clockInTime = new Date(r.time);
+            doClock('in','remote');
+          } else if(!r.active && clockInTime && r.device!==getDeviceId()) {
+            doClock('out','remote');
+          }
+        }
+      }
+    } catch(e) {}
+    clockPoll();
+  }, 4000);
 }
 
 function sendClockSync(action) {
-  if(!_clockChannel) return;
-  try {
-    _clockChannel.send({type:'broadcast',event:'clock',payload:{action,user_id:_uid,device:getDeviceId(),time:new Date().toISOString()}});
-  } catch(e) { console.warn('Clock sync send failed:', e); }
+  // Store state in D for Supabase sync (existing save() pushes it)
+  if(action==='in') D._clockState = {active:true,time:clockInTime.toISOString(),device:getDeviceId()};
+  else D._clockState = {active:false,device:getDeviceId()};
+  save(); // pushes to Supabase via existing _saveTimer
+
+  // Same-browser cross-tab
+  if(_clockBC) try { _clockBC.postMessage({action,uid:_uid,device:getDeviceId()}); } catch(e) {}
 }
 
 function doClock(action,source='local') {
