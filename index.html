@@ -752,8 +752,9 @@ html.theme-pro .kpi-card::before { display: none; }
 html.theme-pro .kpi-card { border-left: 2px solid #222; }
 
 /* ── Misc ── */
-html.theme-pro #streak-flame { display: none; }
-html.theme-pro .streak-card { gap: 8px; }
+html.theme-pro #streak-flame,
+html.theme-pro .log-btn-icon { display: none; }
+html.theme-pro .log-btn { justify-content: center; }
 html.theme-pro .mob-header {
   backdrop-filter: none;
   border-bottom-color: rgba(255,255,255,0.04);
@@ -892,7 +893,7 @@ html.theme-pro .bottom-nav {
     </div>
 
     <button class="log-btn" onclick="openLogModal()">
-      ⚡ LOG SHIFT
+      <span class="log-btn-icon">⚡</span> LOG SHIFT
     </button>
 
     <!-- Weekly bar chart -->
@@ -1125,7 +1126,7 @@ html.theme-pro .bottom-nav {
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="saveShift()" id="log-save-btn">LOG SHIFT ⚡</button>
+      <button class="btn btn-primary" onclick="saveShift()" id="log-save-btn">LOG SHIFT <span class="log-btn-icon">⚡</span></button>
     </div>
   </div>
 </div>
