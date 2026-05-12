@@ -3,6 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ShiftForge">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icon.svg">
 <title>ShiftForge — Work Hard. Level Up.</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
@@ -1075,6 +1081,11 @@ async function bootApp() {
   document.getElementById('app').style.display='block';
   document.getElementById('bottom-nav').style.display='flex';
 
+  // Request notification permission
+  if('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+
   // Update settings UI
   document.getElementById('s-email-disp').textContent = _email||'';
   document.getElementById('s-name').value = D.settings.name||'';
@@ -1491,6 +1502,7 @@ function saveShift() {
   save();
   closeModal();
   renderAll();
+  sendNotification('Shift Saved ⚡', `${fmtHrs(hrs)} · ${fmt(pay)} · +${xp} XP`);
 }
 
 function deleteShift(id) {
@@ -1930,6 +1942,8 @@ function doClock(action) {
     const status = document.getElementById('clock-status');
     status.textContent = '🟢 Clocked in at ' + clockInTime.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
     status.className   = 'clock-status clocked-in';
+    sendNotification('Clocked In ✅', `Started at ${clockInTime.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'})}`);
+
     // Animate the clock in button briefly
     const btn = document.getElementById('btn-clock-in');
     btn.textContent = 'CLOCKED IN ✓';
@@ -1945,6 +1959,8 @@ function doClock(action) {
     const startStr     = clockInTime.toTimeString().slice(0,5);
     const endStr       = clockOutTime.toTimeString().slice(0,5);
     const dateStr      = clockInTime.toISOString().slice(0,10);
+
+    sendNotification('Clocked Out 🛑', `Shift ended · ${hrs}h worked`);
 
     // Pre-fill the log modal with clocked data
     openLogModal();
@@ -1974,9 +1990,27 @@ function doClock(action) {
 
 
 // ======================================================================
+// PWA NOTIFICATIONS
+// ======================================================================
+function sendNotification(title, body) {
+  if(!('Notification' in window)) return;
+  if(Notification.permission === 'granted') {
+    try { new Notification(title, { body, icon:'/icon.svg', badge:'/icon.svg', tag:'shiftforge' }); } catch(e) {}
+  } else if(Notification.permission !== 'denied') {
+    Notification.requestPermission();
+  }
+}
+
+// ======================================================================
 // INIT
 // ======================================================================
 window.addEventListener('load', async function() {
+  // Register service worker
+  if('serviceWorker' in navigator) {
+    try {
+      await navigator.serviceWorker.register('/sw.js', { scope:'/' });
+    } catch(e) { console.warn('SW registration failed:', e); }
+  }
   try {
     if(!window.supabase) throw new Error('Supabase not loaded');
     _sb = window.supabase.createClient(SB_URL, SB_KEY);
