@@ -1529,6 +1529,7 @@ async function bootApp() {
 
   renderAll();
   startClock();
+  initClockSync();
   if(D.settings.gpsEnabled) { setTimeout(initGPS, 1000); }
 }
 
@@ -2676,10 +2677,41 @@ function startClock() {
   clockInterval = setInterval(tickClock, 1000);
 }
 
-function doClock(action) {
+// ── Cross-device clock sync (Supabase Realtime Broadcast) ──
+let _deviceId = null;
+let _clockChannel = null;
+
+function getDeviceId() {
+  if(!_deviceId) {
+    if(!D._deviceId) { D._deviceId = crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36)+Math.random().toString(36).slice(2); save(); }
+    _deviceId = D._deviceId;
+  }
+  return _deviceId;
+}
+
+function initClockSync() {
+  if(!_sb || !_uid || _clockChannel) return;
+  try {
+    _clockChannel = _sb.channel('clock-sync');
+    _clockChannel.on('broadcast', {event:'clock'}, p => {
+      if(p.user_id !== _uid || p.device === getDeviceId()) return;
+      if(p.action==='in' && !clockInTime) doClock('in','remote');
+      else if(p.action==='out' && clockInTime) doClock('out','remote');
+    });
+    _clockChannel.subscribe();
+  } catch(e) { console.warn('Clock sync init failed:', e); }
+}
+
+function sendClockSync(action) {
+  if(!_clockChannel) return;
+  try {
+    _clockChannel.send({type:'broadcast',event:'clock',payload:{action,user_id:_uid,device:getDeviceId(),time:new Date().toISOString()}});
+  } catch(e) { console.warn('Clock sync send failed:', e); }
+}
+
+function doClock(action,source='local') {
   if(action === 'in') {
     clockInTime = new Date();
-    // Update UI
     document.getElementById('btn-clock-in').disabled  = true;
     document.getElementById('btn-clock-out').disabled = false;
     document.getElementById('clock-elapsed').style.display       = 'block';
@@ -2692,9 +2724,9 @@ function doClock(action) {
     status.textContent = '🟢 Clocked in at ' + clockInTime.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
     status.className   = 'clock-status clocked-in';
     sendNotification('Clocked In ✅', `Started at ${clockInTime.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'})}`);
-
     const btn = document.getElementById('btn-clock-in');
     btn.textContent = 'CLOCKED IN ✓';
+    if(source==='local') sendClockSync('in');
   } else {
     if(!clockInTime) return;
     const clockOutTime = new Date();
@@ -2704,17 +2736,16 @@ function doClock(action) {
     const endStr       = clockOutTime.toTimeString().slice(0,5);
     const dateStr      = clockInTime.toISOString().slice(0,10);
 
-    sendNotification('Clocked Out 🛑', `Shift ended · ${hrs}h worked`);
+    if(source==='local') {
+      sendNotification('Clocked Out 🛑', `Shift ended · ${hrs}h worked`);
+      openLogModal();
+      document.getElementById('log-date').value  = dateStr;
+      document.getElementById('log-start').value = startStr;
+      document.getElementById('log-end').value   = endStr;
+      document.getElementById('log-hours').value = hrs;
+      updatePreview();
+    }
 
-    // Pre-fill the log modal with clocked data
-    openLogModal();
-    document.getElementById('log-date').value  = dateStr;
-    document.getElementById('log-start').value = startStr;
-    document.getElementById('log-end').value   = endStr;
-    document.getElementById('log-hours').value = hrs;
-    updatePreview();
-
-    // Reset clock UI
     clockInTime = null;
     document.getElementById('btn-clock-in').disabled  = false;
     document.getElementById('btn-clock-out').disabled = true;
@@ -2724,8 +2755,9 @@ function doClock(action) {
     document.getElementById('clock-running-money').style.display = 'none';
     document.getElementById('clock-running-label').style.display = 'none';
     const status = document.getElementById('clock-status');
-    status.textContent = 'Shift ended — confirm below';
+    status.textContent = source==='local'?'Shift ended — confirm below':'🛑 Clocked out on another device';
     status.className   = 'clock-status';
+    if(source==='local') sendClockSync('out');
   }
 }
 
