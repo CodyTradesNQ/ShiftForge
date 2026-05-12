@@ -256,6 +256,7 @@ body::before {
 .kpi-value.purple { color:var(--purple2); }
 .kpi-value.orange { color:var(--orange); }
 .kpi-value.teal { color:var(--teal); }
+.kpi-value.red { color:var(--red); }
 .kpi-sub { font-size:10px; font-family:var(--font-mono); color:var(--text3); margin-top:4px; }
 
 /* ── STREAK ── */
@@ -946,6 +947,11 @@ html.theme-pro .bottom-nav {
         <div class="kpi-label">All Time</div>
         <div class="kpi-value orange" id="kpi-total-pay">$0</div>
         <div class="kpi-sub" id="kpi-total-hrs">0h total</div>
+      </div>
+      <div class="kpi-card red" id="kpi-current-hrs-card">
+        <div class="kpi-label">Current Hours</div>
+        <div class="kpi-value red" id="kpi-current-hrs">0h</div>
+        <div class="kpi-sub" id="kpi-current-pp">this pay period</div>
       </div>
     </div>
 
@@ -2109,6 +2115,18 @@ function renderHome() {
   document.getElementById('kpi-month-hrs').textContent=fmtHrs(sum(monthShifts,'hours'))+' this month';
   document.getElementById('kpi-total-pay').textContent=fmt(calcAggregatePay(allShifts));
   document.getElementById('kpi-total-hrs').textContent=fmtHrs(sum(allShifts,'hours'))+' total';
+
+  // Current Hours (pay period hours with color coding)
+  const ppHours = sum(ppShifts, 'hours');
+  const hrsEl = document.getElementById('kpi-current-hrs');
+  const hrsCard = document.getElementById('kpi-current-hrs-card');
+  if(hrsEl) {
+    hrsEl.textContent = fmtHrs(ppHours);
+    hrsEl.className = 'kpi-value';
+    if(ppHours < 40) { hrsEl.classList.add('red'); hrsCard.className = 'kpi-card red'; }
+    else if(ppHours < 80) { hrsEl.classList.add('gold'); hrsCard.className = 'kpi-card gold'; }
+    else { hrsEl.classList.add('green'); hrsCard.className = 'kpi-card green'; }
+  }
 
   // Recent shift count
   document.getElementById('recent-count').textContent = D.shifts.length;
