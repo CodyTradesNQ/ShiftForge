@@ -568,6 +568,35 @@ body::before {
   font-size:10px; font-family:var(--font-mono); color:var(--purple2);
 }
 
+/* ── CALENDAR ── */
+.cal-nav { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+.cal-nav-title { font-family:var(--font-display); font-size:22px; letter-spacing:1px; color:var(--text); }
+.cal-nav-btn { background:var(--bg3); border:1px solid var(--border2); border-radius:6px; padding:6px 10px; color:var(--text2); cursor:pointer; font-size:14px; transition:all 0.1s; }
+.cal-nav-btn:hover { background:var(--bg4); color:var(--text); }
+.cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:2px; }
+.cal-header { text-align:center; font-size:9px; font-family:var(--font-mono); color:var(--text3); padding:4px 0; text-transform:uppercase; letter-spacing:1px; }
+.cal-day {
+  aspect-ratio:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  border-radius:8px; cursor:pointer; font-size:13px; font-weight:500; color:var(--text2);
+  background:transparent; transition:all 0.1s; position:relative;
+}
+.cal-day:hover { background:var(--bg3); }
+.cal-day.other-month { color:var(--text3); opacity:0.35; }
+.cal-day.today { font-weight:700; color:var(--purple2); }
+.cal-day.has-shift::after { content:''; position:absolute; bottom:4px; width:4px; height:4px; border-radius:50%; background:var(--green); }
+.cal-day.selected { background:var(--purple); color:#fff; }
+.cal-day.selected.has-shift::after { background:#fff; }
+.cal-day.selected:hover { background:var(--purple); }
+.cal-day-wrap { display:contents; }
+
+/* Calendar day breakdown card */
+#day-breakdown { display:none; margin-bottom:14px; }
+.day-bd-head { font-size:12px; font-family:var(--font-mono); color:var(--text2); letter-spacing:1px; margin-bottom:8px; }
+.day-bd-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.day-bd-item { background:var(--bg3); border-radius:8px; padding:10px; text-align:center; }
+.day-bd-label { font-size:8px; font-family:var(--font-mono); color:var(--text3); text-transform:uppercase; letter-spacing:1px; margin-bottom:2px; }
+.day-bd-value { font-family:var(--font-display); font-size:18px; letter-spacing:1px; color:var(--text); }
+
 /* ── SCROLLBAR ── */
 ::-webkit-scrollbar { width:4px; }
 ::-webkit-scrollbar-track { background:transparent; }
@@ -937,13 +966,24 @@ html.theme-pro .bottom-nav {
       </div>
     </div>
     <div class="card" style="margin-bottom:14px;">
-      <div class="card-title">Filter by Date</div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;" id="history-filters">
-        <select id="filter-year" style="flex:1;min-width:90px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:9px 10px;font-size:12px;color:var(--text);outline:none;font-family:var(--font-mono);"><option value="">All Years</option></select>
-        <select id="filter-quarter" style="flex:1;min-width:80px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:9px 10px;font-size:12px;color:var(--text);outline:none;font-family:var(--font-mono);"><option value="">All Quarters</option></select>
-        <select id="filter-month" style="flex:1;min-width:85px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:9px 10px;font-size:12px;color:var(--text);outline:none;font-family:var(--font-mono);"><option value="">All Months</option></select>
-        <select id="filter-week" style="flex:1;min-width:80px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:9px 10px;font-size:12px;color:var(--text);outline:none;font-family:var(--font-mono);"><option value="">All Weeks</option></select>
-        <select id="filter-day" style="flex:1;min-width:70px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:9px 10px;font-size:12px;color:var(--text);outline:none;font-family:var(--font-mono);"><option value="">All Days</option></select>
+      <div class="card-title">Calendar</div>
+      <div class="cal-nav">
+        <button class="cal-nav-btn" onclick="calMonth(-1)">◀</button>
+        <div class="cal-nav-title" id="cal-title">January 2026</div>
+        <button class="cal-nav-btn" onclick="calMonth(1)">▶</button>
+      </div>
+      <div class="cal-grid" id="cal-grid"></div>
+    </div>
+
+    <!-- Day breakdown -->
+    <div class="card" id="day-breakdown">
+      <div class="day-bd-head" id="day-bd-date"></div>
+      <div class="day-bd-grid">
+        <div class="day-bd-item"><div class="day-bd-label">Hours</div><div class="day-bd-value" id="bd-hours">—</div></div>
+        <div class="day-bd-item"><div class="day-bd-label">OT Hours</div><div class="day-bd-value" id="bd-ot-hours">—</div></div>
+        <div class="day-bd-item"><div class="day-bd-label">Regular Pay</div><div class="day-bd-value" id="bd-reg-pay">—</div></div>
+        <div class="day-bd-item"><div class="day-bd-label">OT Pay</div><div class="day-bd-value" id="bd-ot-pay">—</div></div>
+        <div class="day-bd-item" style="grid-column:1/-1;background:var(--bg4);"><div class="day-bd-label">Total Income</div><div class="day-bd-value" id="bd-total-pay" style="font-size:24px;color:var(--green);">—</div></div>
       </div>
     </div>
     <div class="card">
@@ -1858,6 +1898,7 @@ function showGoalCelebration() {
 // ======================================================================
 function renderAll() {
   renderHome();
+  renderCalendar();
   renderHistory();
   renderAchievements();
   renderSettings();
@@ -2017,41 +2058,7 @@ function getFilterLabel() {
   return parts.length ? parts.join(' · ') : 'All Time';
 }
 
-function populateHistoryFilters() {
-  const years = [...new Set(D.shifts.map(s => new Date(s.date+'T12:00:00').getFullYear()))].sort((a,b)=>b-a);
-  const yearEl = document.getElementById('filter-year');
-  if(!yearEl) return;
-  yearEl.innerHTML = '<option value="">All Years</option>'+years.map(y => `<option value="${y}"${historyFilter.year===y?' selected':''}>${y}</option>`).join('');
-
-  const quarterEl = document.getElementById('filter-quarter');
-  quarterEl.innerHTML = '<option value="">All Quarters</option>'+[1,2,3,4].map(q => `<option value="${q}"${historyFilter.quarter===q?' selected':''}>Q${q}</option>`).join('');
-
-  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  const monthEl = document.getElementById('filter-month');
-  monthEl.innerHTML = '<option value="">All Months</option>'+months.map((m,i) => `<option value="${i+1}"${historyFilter.month===i+1?' selected':''}>${m}</option>`).join('');
-
-  // Weeks: from shifts in selected year or all shifts
-  let shiftPool = D.shifts;
-  if(historyFilter.year !== null) shiftPool = shiftPool.filter(s => new Date(s.date+'T12:00:00').getFullYear() === historyFilter.year);
-  const weeks = [...new Set(shiftPool.map(s => getWeekNumber(new Date(s.date+'T12:00:00'))))].sort((a,b)=>a-b);
-  const weekEl = document.getElementById('filter-week');
-  weekEl.innerHTML = '<option value="">All Weeks</option>'+weeks.map(w => `<option value="${w}"${historyFilter.week===w?' selected':''}>W${w}</option>`).join('');
-
-  const dayEl = document.getElementById('filter-day');
-  dayEl.innerHTML = '<option value="">All Days</option>'+[...Array(31).keys()].map(i => `<option value="${i+1}"${historyFilter.day===i+1?' selected':''}>${i+1}</option>`).join('');
-}
-
-function applyHistoryFilter() {
-  historyFilter.year    = parseInt(document.getElementById('filter-year').value) || null;
-  historyFilter.quarter = parseInt(document.getElementById('filter-quarter').value) || null;
-  historyFilter.month   = parseInt(document.getElementById('filter-month').value) || null;
-  historyFilter.week    = parseInt(document.getElementById('filter-week').value) || null;
-  historyFilter.day     = parseInt(document.getElementById('filter-day').value) || null;
-  renderHistory();
-}
-
 function renderHistory() {
-  populateHistoryFilters();
   const filtered = getFilteredShifts();
   const all = filtered;
   const sum=(k)=>all.reduce((s,x)=>s+parseFloat(x[k]||0),0);
@@ -2066,11 +2073,125 @@ function renderHistory() {
   document.getElementById('history-list').innerHTML=all.map(s=>shiftHTML(s)).join('');
 }
 
-// Filter change via delegation (selects are recreated on populate)
-const hfEl = document.getElementById('history-filters');
-if(hfEl) hfEl.addEventListener('change', function(e) {
-  if(e.target.tagName === 'SELECT') applyHistoryFilter();
-});
+// ── Calendar ──
+let _calYear, _calMonth;
+let _selectedDay = null;
+
+function renderCalendar() {
+  const now = new Date();
+  if(_calYear === undefined) { _calYear = now.getFullYear(); _calMonth = now.getMonth(); }
+  const title = document.getElementById('cal-title');
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  if(title) title.textContent = months[_calMonth]+' '+_calYear;
+
+  const grid = document.getElementById('cal-grid');
+  if(!grid) return;
+  const first = new Date(_calYear, _calMonth, 1).getDay();
+  const daysInMonth = new Date(_calYear, _calMonth+1, 0).getDate();
+  const daysInPrev = new Date(_calYear, _calMonth, 0).getDate();
+  const todayStr = today();
+  const shiftDates = new Set(D.shifts.map(s => s.date));
+  let html = '<div class="cal-header">S</div><div class="cal-header">M</div><div class="cal-header">T</div><div class="cal-header">W</div><div class="cal-header">T</div><div class="cal-header">F</div><div class="cal-header">S</div>';
+  const selStr = _selectedDay;
+
+  // Prev month trailing days
+  for(let i = first-1; i >= 0; i--) {
+    const d = daysInPrev - i;
+    const m = _calMonth-1 < 0 ? 11 : _calMonth-1;
+    const y = _calMonth-1 < 0 ? _calYear-1 : _calYear;
+    const ds = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    html += `<div class="cal-day other-month" onclick="selectDay('${ds}')">${d}</div>`;
+  }
+
+  // Current month days
+  for(let d = 1; d <= daysInMonth; d++) {
+    const ds = `${_calYear}-${String(_calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    let cls = 'cal-day';
+    if(ds === todayStr) cls += ' today';
+    if(shiftDates.has(ds)) cls += ' has-shift';
+    if(ds === selStr) cls += ' selected';
+    html += `<div class="${cls}" onclick="selectDay('${ds}')">${d}</div>`;
+  }
+
+  // Next month leading days
+  const totalCells = first + daysInMonth;
+  const remaining = 7 - (totalCells % 7 || 7);
+  for(let d = 1; d <= remaining; d++) {
+    const m = _calMonth+1 > 11 ? 0 : _calMonth+1;
+    const y = _calMonth+1 > 11 ? _calYear+1 : _calYear;
+    const ds = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    html += `<div class="cal-day other-month" onclick="selectDay('${ds}')">${d}</div>`;
+  }
+  grid.innerHTML = html;
+}
+
+function selectDay(dateStr) {
+  if(_selectedDay === dateStr) {
+    _selectedDay = null;
+    historyFilter = { year:null, quarter:null, month:null, week:null, day:null };
+    document.getElementById('day-breakdown').style.display = 'none';
+    renderCalendar();
+    renderHistory();
+    return;
+  }
+  _selectedDay = dateStr;
+  historyFilter = { year:null, quarter:null, month:null, week:null, day:null };
+  historyFilter.year = parseInt(dateStr.slice(0,4));
+  historyFilter.month = parseInt(dateStr.slice(5,7));
+  historyFilter.day = parseInt(dateStr.slice(8,10));
+  renderCalendar();
+  renderHistory();
+
+  // Show breakdown
+  const breakdown = getDayBreakdown(dateStr);
+  document.getElementById('day-bd-date').textContent = new Date(dateStr+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+  document.getElementById('bd-hours').textContent = fmtHrs(breakdown.hours);
+  document.getElementById('bd-ot-hours').textContent = fmtHrs(breakdown.otHours);
+  document.getElementById('bd-reg-pay').textContent = fmt(breakdown.regularPay);
+  document.getElementById('bd-ot-pay').textContent = fmt(breakdown.otPay);
+  document.getElementById('bd-total-pay').textContent = fmt(breakdown.totalPay);
+  document.getElementById('day-breakdown').style.display = 'block';
+}
+
+function calMonth(delta) {
+  _calMonth += delta;
+  if(_calMonth < 0) { _calMonth = 11; _calYear--; }
+  if(_calMonth > 11) { _calMonth = 0; _calYear++; }
+  _selectedDay = null;
+  historyFilter = { year:null, quarter:null, month:null, week:null, day:null };
+  document.getElementById('day-breakdown').style.display = 'none';
+  renderCalendar();
+  renderHistory();
+}
+
+function getDayBreakdown(dateStr) {
+  const dayShifts = D.shifts.filter(s => s.date === dateStr);
+  const dayHours = dayShifts.reduce((s,x)=>s+parseFloat(x.hours||0),0);
+  const threshold = D.settings.overtimeThreshold || 0;
+  const otRate = D.settings.overtimeRate || 0;
+  const baseRate = D.settings.rate || 0;
+
+  if(!threshold || !otRate) {
+    const pay = dayHours * baseRate;
+    return { hours:dayHours, otHours:0, regularPay:pay, otPay:0, totalPay:pay };
+  }
+
+  // Hours already worked in this pay period BEFORE today
+  const ppKey = getPayPeriodKey(dateStr);
+  const priorHours = D.shifts.filter(s => s.date < dateStr && getPayPeriodKey(s.date) === ppKey)
+    .reduce((s,x) => s+parseFloat(x.hours||0), 0);
+
+  const regularHours = Math.min(dayHours, Math.max(0, threshold - priorHours));
+  const overtimeHours = dayHours - regularHours;
+
+  return {
+    hours: dayHours,
+    otHours: overtimeHours,
+    regularPay: regularHours * baseRate,
+    otPay: overtimeHours * otRate,
+    totalPay: (regularHours * baseRate) + (overtimeHours * otRate)
+  };
+}
 
 function renderAchievements() {
   const {lvl,pct,toNext}=xpProgress(D.xp);
@@ -2150,6 +2271,7 @@ function showPage(p) {
   const btn=document.getElementById('nav-'+p);
   if(btn) btn.classList.add('active');
   currentPage=p;
+  if(p==='history') { renderCalendar(); renderHistory(); }
   if(p==='achievements') renderAchievements();
 }
 
