@@ -572,6 +572,56 @@ body::before {
 ::-webkit-scrollbar { width:4px; }
 ::-webkit-scrollbar-track { background:transparent; }
 ::-webkit-scrollbar-thumb { background:var(--bg4); border-radius:4px; }
+
+/* ── THEMES ── */
+html.theme-light {
+  --bg: #f7f2ec;
+  --bg2: #fdf8f2;
+  --bg3: #efe7df;
+  --bg4: #e2d9d0;
+  --border: rgba(0,0,0,0.06);
+  --border2: rgba(0,0,0,0.1);
+  --text: #2d2822;
+  --text2: #7a726a;
+  --text3: #a89f96;
+  --gold: #c49a2c;
+  --gold2: #a88000;
+  --purple: #6b4ce0;
+  --purple2: #8a6ff5;
+  --green: #00a854;
+  --green2: #008a3a;
+  --red: #d63847;
+  --orange: #d4722a;
+  --teal: #00b8a8;
+}
+html.theme-pro {
+  --bg: #080808;
+  --bg2: #101010;
+  --bg3: #181818;
+  --bg4: #242424;
+  --border: rgba(255,255,255,0.04);
+  --border2: rgba(255,255,255,0.07);
+  --text: #e2e2e2;
+  --text2: #7a7a7a;
+  --text3: #4a4a4a;
+  --gold: #b8b8b8;
+  --gold2: #909090;
+  --purple: #707070;
+  --purple2: #a0a0a0;
+  --green: #5a5a5a;
+  --green2: #3a3a3a;
+  --red: #6a6a6a;
+  --orange: #808080;
+  --teal: #666666;
+  --font-body: 'Space Grotesk', 'Inter', sans-serif;
+  --font-weight: 300;
+}
+html.theme-pro .mob-header-title,
+html.theme-pro .auth-logo-name,
+html.theme-pro #clock-time-display,
+html.theme-pro .kpi-value {
+  font-weight: 300;
+}
 </style>
 </head>
 <body>
@@ -828,6 +878,23 @@ body::before {
       <button class="btn btn-primary" style="margin-top:16px;" onclick="saveAllSettings()">💾 Save Settings</button>
       <div id="settings-saved-msg" style="font-size:11px;font-family:var(--font-mono);color:var(--green);margin-top:8px;text-align:center;display:none;">Settings saved ✓</div>
     </div>
+    <div class="card">
+      <div class="card-title">Theme</div>
+      <div style="display:flex;gap:8px;" id="theme-selector">
+        <div class="theme-option" data-theme="dark" onclick="setTheme('dark')" style="flex:1;background:var(--bg3);border:2px solid var(--border2);border-radius:10px;padding:12px;text-align:center;cursor:pointer;transition:all 0.15s;">
+          <div style="font-size:24px;margin-bottom:4px;">🌙</div>
+          <div style="font-size:11px;font-family:var(--font-mono);color:var(--text2);">Dark</div>
+        </div>
+        <div class="theme-option" data-theme="light" onclick="setTheme('light')" style="flex:1;background:var(--bg3);border:2px solid var(--border2);border-radius:10px;padding:12px;text-align:center;cursor:pointer;transition:all 0.15s;">
+          <div style="font-size:24px;margin-bottom:4px;">☀️</div>
+          <div style="font-size:11px;font-family:var(--font-mono);color:var(--text2);">Warm Light</div>
+        </div>
+        <div class="theme-option" data-theme="pro" onclick="setTheme('pro')" style="flex:1;background:var(--bg3);border:2px solid var(--border2);border-radius:10px;padding:12px;text-align:center;cursor:pointer;transition:all 0.15s;">
+          <div style="font-size:24px;margin-bottom:4px;">⚙️</div>
+          <div style="font-size:11px;font-family:var(--font-mono);color:var(--text2);">Pro</div>
+        </div>
+      </div>
+    </div>
     <div class="card" id="gps-settings-card">
       <div class="card-title">GPS Auto-Clock</div>
       <div class="settings-item">
@@ -1002,7 +1069,7 @@ let _authMode = 'signin';
 // ======================================================================
 let D = {
   shifts: [],       // [{id,date,startTime,endTime,hours,rate,job,notes,xp}]
-  settings: { name:'', rate:0, weeklyGoal:40, taxRate:0, gpsEnabled:false, gpsLat:null, gpsLng:null, gpsRadius:100 },
+  settings: { name:'', rate:0, weeklyGoal:40, taxRate:0, gpsEnabled:false, gpsLat:null, gpsLng:null, gpsRadius:100, notificationsPrompted:false, theme:null },
   xp: 0,
   level: 1,
   streak: 0,
@@ -1025,6 +1092,22 @@ function save() {
       if (el) { el.textContent='⚠ sync failed'; el.style.color='var(--orange)'; }
     }
   }, 900);
+}
+
+function setTheme(name) {
+  D.settings.theme = name;
+  applyTheme(name);
+  save();
+}
+
+function applyTheme(name) {
+  document.documentElement.classList.remove('theme-light','theme-pro','theme-dark');
+  if(name && name !== 'dark') document.documentElement.classList.add('theme-'+name);
+  document.querySelectorAll('.theme-option').forEach(el => {
+    const t = el.getAttribute('data-theme');
+    el.style.borderColor = t === name ? 'var(--purple)' : 'var(--border2)';
+    el.style.background = t === name ? 'rgba(124,92,252,0.1)' : 'var(--bg3)';
+  });
 }
 
 function saveAllSettings() {
@@ -1841,6 +1924,7 @@ function renderSettings() {
   document.getElementById('s-gps-enabled').checked = enabled;
   document.getElementById('gps-detail').style.display = enabled ? 'block' : 'none';
   updateGPSToggleUI();
+  applyTheme(D.settings.theme);
 }
 
 // ======================================================================
@@ -2017,12 +2101,16 @@ function doClock(action) {
 function sendNotification(title, body) {
   try {
     if(!('Notification' in window) || Notification.permission!=='granted') return;
-    new Notification(title, { body, icon:'/icon.svg', tag:'shiftforge' });
+    new Notification(title, { body, icon:'/icon.png', tag:'shiftforge' });
   } catch(e) {}
 }
 
 function promptNotifications() {
-  if(!('Notification' in window) || Notification.permission!=='default') return;
+  if(!('Notification' in window)) return;
+  if(D.settings.notificationsPrompted) return;
+  D.settings.notificationsPrompted = true;
+  save();
+  if(Notification.permission!=='default') return;
   sfDialog({
     icon:'🔔',
     title:'Stay in the Loop',
