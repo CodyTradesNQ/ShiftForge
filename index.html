@@ -604,15 +604,17 @@ html.theme-pro {
   --text: #e2e2e2;
   --text2: #7a7a7a;
   --text3: #4a4a4a;
-  --gold: #b8b8b8;
-  --gold2: #909090;
-  --purple: #707070;
-  --purple2: #a0a0a0;
-  --green: #5a5a5a;
-  --green2: #3a3a3a;
-  --red: #6a6a6a;
-  --orange: #808080;
-  --teal: #666666;
+  --gold: #c8b078;
+  --gold2: #a89050;
+  --purple: #808080;
+  --purple2: #a8a8a8;
+  --green: #6a9a6a;
+  --green2: #4a7a4a;
+  --red: #8a5a5a;
+  --orange: #a08050;
+  --teal: #5a8a8a;
+  --r: 0;
+  --r-lg: 0;
   --font-body: 'Space Grotesk', sans-serif;
   --font-display: 'Space Grotesk', sans-serif;
 }
@@ -638,19 +640,125 @@ html.theme-pro .milestone-pct {
   font-weight: 300;
   letter-spacing: 1px;
 }
-html.theme-pro .xp-fill {
-  background: linear-gradient(90deg, #444, #888) !important;
+/* ── Square everything ── */
+html.theme-pro .auth-card,
+html.theme-pro .card,
+html.theme-pro .modal,
+html.theme-pro .kpi-card,
+html.theme-pro .streak-card,
+html.theme-pro #clock-widget,
+html.theme-pro .badge-item,
+html.theme-pro .sf-dlg-confirm,
+html.theme-pro .sf-dlg-cancel,
+html.theme-pro #sf-dialog-box,
+html.theme-pro .auth-btn,
+html.theme-pro .btn,
+html.theme-pro .log-btn,
+html.theme-pro .clock-btn,
+html.theme-pro input,
+html.theme-pro select,
+html.theme-pro .settings-input,
+html.theme-pro .form-group input,
+html.theme-pro .form-group select,
+html.theme-pro .xp-bar,
+html.theme-pro .xp-fill,
+html.theme-pro .milestone-bar,
+html.theme-pro .milestone-fill,
+html.theme-pro .week-bar,
+html.theme-pro .level-pill,
+html.theme-pro .streak-pill,
+html.theme-pro .gps-badge,
+html.theme-pro .auth-tab {
+  border-radius: 0 !important;
+}
+html.theme-pro .auth-tabs {
+  border-radius: 0 !important;
+}
+
+/* ── Clean clock buttons ── */
+html.theme-pro .clock-btn {
+  border: 1px solid #333 !important;
+  background: transparent !important;
+  font-weight: 300;
+  letter-spacing: 3px;
+  font-size: 14px;
+  padding: 12px 20px;
+}
+html.theme-pro .clock-btn-in {
+  color: var(--green) !important;
   box-shadow: none !important;
 }
+html.theme-pro .clock-btn-out {
+  color: var(--text2) !important;
+  box-shadow: none !important;
+}
+html.theme-pro .clock-btn:disabled {
+  opacity: 0.2 !important;
+}
+
+/* ── Muted action buttons ── */
 html.theme-pro .log-btn,
 html.theme-pro .btn-primary,
 html.theme-pro .sf-dlg-confirm {
-  background: #222 !important;
+  background: #1a1a1a !important;
+  border: 1px solid #333 !important;
+  box-shadow: none !important;
+  font-weight: 300;
+  letter-spacing: 3px;
+}
+html.theme-pro .log-btn {
+  color: var(--green) !important;
+}
+html.theme-pro .btn-primary {
+  color: var(--text) !important;
+}
+
+/* ── Goal bar ── */
+html.theme-pro #goal-card {
+  border-color: rgba(255,255,255,0.06) !important;
+}
+html.theme-pro .goal-fill-red {
+  background: #5a3a3a !important;
   box-shadow: none !important;
 }
-html.theme-pro .clock-btn-in,
-html.theme-pro .clock-btn-out {
+html.theme-pro .goal-fill-orange {
+  background: #6a5030 !important;
   box-shadow: none !important;
+}
+html.theme-pro .goal-fill-yellow {
+  background: #8a7a40 !important;
+  box-shadow: none !important;
+}
+html.theme-pro .goal-fill-green {
+  background: #3a6a3a !important;
+  box-shadow: none !important;
+}
+
+/* ── XP bar ── */
+html.theme-pro .xp-fill {
+  background: #333 !important;
+  box-shadow: none !important;
+}
+
+/* ── KPI cards ── */
+html.theme-pro .kpi-value.green,
+html.theme-pro .kpi-value.gold,
+html.theme-pro .kpi-value.orange,
+html.theme-pro .kpi-value.purple { color: var(--green) !important; }
+html.theme-pro .shift-pay { color: var(--green) !important; }
+html.theme-pro #clock-running-money { color: var(--green) !important; }
+html.theme-pro .kpi-sub { color: var(--text3); }
+html.theme-pro .kpi-card::before { display: none; }
+html.theme-pro .kpi-card { border-left: 2px solid #222; }
+
+/* ── Misc ── */
+html.theme-pro .mob-header {
+  backdrop-filter: none;
+  border-bottom-color: rgba(255,255,255,0.04);
+}
+html.theme-pro .bottom-nav {
+  backdrop-filter: none;
+  border-top-color: rgba(255,255,255,0.04);
 }
 </style>
 </head>
