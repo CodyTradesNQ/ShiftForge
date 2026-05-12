@@ -1016,7 +1016,30 @@ html.theme-pro .bottom-nav {
         <div><div class="settings-label">Tax Rate (%)</div><div class="settings-sub">For net pay estimates</div></div>
         <input class="settings-input" id="s-tax" type="number" placeholder="0" step="0.5">
       </div>
-      <button class="btn btn-primary" style="margin-top:16px;" onclick="saveAllSettings()">💾 Save Settings</button>
+      <div style="border-top:1px solid var(--border);margin:14px 0 14px;padding-top:10px;">
+        <div style="font-size:9px;letter-spacing:2.5px;text-transform:uppercase;font-family:var(--font-mono);color:var(--text3);margin-bottom:12px;">Pay Period & Overtime</div>
+        <div class="settings-item">
+          <div><div class="settings-label">Pay Period</div><div class="settings-sub">How often you get paid</div></div>
+          <select class="settings-input" id="s-pay-period" style="width:110px;text-align:left;">
+            <option value="weekly">Weekly</option>
+            <option value="biweekly">Biweekly</option>
+            <option value="monthly">Monthly</option>
+          </select>
+        </div>
+        <div class="settings-item">
+          <div><div class="settings-label">Pay Period Start</div><div class="settings-sub">First day of current period</div></div>
+          <input class="settings-input" id="s-pay-start" type="date" style="width:140px;text-align:left;">
+        </div>
+        <div class="settings-item">
+          <div><div class="settings-label">Overtime Threshold</div><div class="settings-sub">Hours before OT kicks in</div></div>
+          <input class="settings-input" id="s-ot-threshold" type="number" placeholder="80" style="width:70px;">
+        </div>
+        <div class="settings-item">
+          <div><div class="settings-label">Overtime Rate ($/hr)</div><div class="settings-sub">Higher rate for OT hours</div></div>
+          <input class="settings-input" id="s-ot-rate" type="number" placeholder="0.00" step="0.01" style="width:90px;">
+        </div>
+      </div>
+      <button class="btn btn-primary" style="margin-top:8px;" onclick="saveAllSettings()">💾 Save Settings</button>
       <div id="settings-saved-msg" style="font-size:11px;font-family:var(--font-mono);color:var(--green);margin-top:8px;text-align:center;display:none;">Settings saved ✓</div>
     </div>
     <div class="card">
@@ -1210,7 +1233,7 @@ let _authMode = 'signin';
 // ======================================================================
 let D = {
   shifts: [],       // [{id,date,startTime,endTime,hours,rate,job,notes,xp}]
-  settings: { name:'', rate:0, weeklyGoal:40, taxRate:0, gpsEnabled:false, gpsLat:null, gpsLng:null, gpsRadius:100, notificationsPrompted:false, theme:null },
+  settings: { name:'', rate:0, weeklyGoal:40, taxRate:0, gpsEnabled:false, gpsLat:null, gpsLng:null, gpsRadius:100, notificationsPrompted:false, theme:'pro', payPeriodType:'biweekly', payPeriodStart:'', overtimeThreshold:80, overtimeRate:0 },
   xp: 0,
   level: 1,
   streak: 0,
@@ -1242,8 +1265,9 @@ function setTheme(name) {
 }
 
 function applyTheme(name) {
+  if(!name) name = 'pro';
   document.documentElement.classList.remove('theme-light','theme-pro','theme-dark');
-  if(name && name !== 'dark') document.documentElement.classList.add('theme-'+name);
+  if(name !== 'dark') document.documentElement.classList.add('theme-'+name);
   document.querySelectorAll('.theme-option').forEach(el => {
     const t = el.getAttribute('data-theme');
     el.style.borderColor = t === name ? 'var(--purple)' : 'var(--border2)';
@@ -1259,6 +1283,10 @@ function saveAllSettings() {
   D.settings.gpsLat     = parseFloat(document.getElementById('s-gps-lat').value) || null;
   D.settings.gpsLng     = parseFloat(document.getElementById('s-gps-lng').value) || null;
   D.settings.gpsRadius  = parseFloat(document.getElementById('s-gps-radius').value) || 100;
+  D.settings.payPeriodType    = document.getElementById('s-pay-period').value || 'biweekly';
+  D.settings.payPeriodStart   = document.getElementById('s-pay-start').value || '';
+  D.settings.overtimeThreshold = parseFloat(document.getElementById('s-ot-threshold').value) || 0;
+  D.settings.overtimeRate     = parseFloat(document.getElementById('s-ot-rate').value) || 0;
   save(); renderAll();
   updateGPSBadge();
   const msg = document.getElementById('settings-saved-msg');
@@ -1628,7 +1656,46 @@ function fmtHrs(h) { const hrs=Math.floor(h); const m=Math.round((h-hrs)*60); re
 function today() { return new Date().toISOString().slice(0,10); }
 
 function totalHours() { return D.shifts.reduce((s,x)=>s+parseFloat(x.hours||0),0); }
-function totalEarned() { return D.shifts.reduce((s,x)=>s+parseFloat(x.pay||0),0); }
+function totalEarned() { return calcAggregatePay(D.shifts); }
+
+function getPayPeriodKey(dateStr) {
+  const d = new Date(dateStr+'T12:00:00');
+  const t = D.settings.payPeriodType || 'biweekly';
+  if(t==='weekly') {
+    const ys = new Date(d.getFullYear(),0,1);
+    const wk = Math.ceil((((d-ys)/86400000)+ys.getDay()+1)/7);
+    return d.getFullYear()+'-W'+String(wk).padStart(2,'0');
+  }
+  if(t==='biweekly' && D.settings.payPeriodStart) {
+    const start = new Date(D.settings.payPeriodStart+'T12:00:00');
+    const days = Math.floor((d-start)/86400000);
+    const period = Math.floor(days/14);
+    const ps = new Date(start);
+    ps.setDate(ps.getDate()+period*14);
+    return ps.toISOString().slice(0,10);
+  }
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+}
+
+function calcAggregatePay(shifts) {
+  const threshold = D.settings.overtimeThreshold || 0;
+  const otRate = D.settings.overtimeRate || 0;
+  const baseRate = D.settings.rate || 0;
+  if(!threshold || !otRate || !baseRate) {
+    return shifts.reduce((s,x)=>s+parseFloat(x.pay||0),0);
+  }
+  const groups = {};
+  shifts.forEach(s => {
+    const k = getPayPeriodKey(s.date);
+    groups[k] = (groups[k]||0) + parseFloat(s.hours||0);
+  });
+  let total = 0;
+  for(const k in groups) {
+    const h = groups[k];
+    total += h <= threshold ? h*baseRate : threshold*baseRate + (h-threshold)*otRate;
+  }
+  return total;
+}
 
 function shiftsByPeriod(period) {
   const now=new Date();
@@ -1857,13 +1924,13 @@ function renderHome() {
   const allShifts=D.shifts;
 
   const sum=(arr,k)=>arr.reduce((s,x)=>s+parseFloat(x[k]||0),0);
-  document.getElementById('kpi-today-pay').textContent=fmt(sum(todayShifts,'pay'));
+  document.getElementById('kpi-today-pay').textContent=fmt(calcAggregatePay(todayShifts));
   document.getElementById('kpi-today-hrs').textContent=fmtHrs(sum(todayShifts,'hours'))+' logged';
-  document.getElementById('kpi-week-pay').textContent=fmt(sum(weekShifts,'pay'));
+  document.getElementById('kpi-week-pay').textContent=fmt(calcAggregatePay(weekShifts));
   document.getElementById('kpi-week-hrs').textContent=fmtHrs(sum(weekShifts,'hours'))+' this week';
-  document.getElementById('kpi-month-pay').textContent=fmt(sum(monthShifts,'pay'));
+  document.getElementById('kpi-month-pay').textContent=fmt(calcAggregatePay(monthShifts));
   document.getElementById('kpi-month-hrs').textContent=fmtHrs(sum(monthShifts,'hours'))+' this month';
-  document.getElementById('kpi-total-pay').textContent=fmt(sum(allShifts,'pay'));
+  document.getElementById('kpi-total-pay').textContent=fmt(calcAggregatePay(allShifts));
   document.getElementById('kpi-total-hrs').textContent=fmtHrs(sum(allShifts,'hours'))+' total';
 
   // Weekly chart
@@ -1990,7 +2057,7 @@ function renderHistory() {
   const sum=(k)=>all.reduce((s,x)=>s+parseFloat(x[k]||0),0);
   document.getElementById('hist-count').textContent=all.length;
   document.getElementById('hist-hours').textContent=fmtHrs(sum('hours'));
-  document.getElementById('hist-earned').textContent=fmt(sum('pay'));
+  document.getElementById('hist-earned').textContent=fmt(calcAggregatePay(all));
 
   if(!all.length) {
     document.getElementById('history-list').innerHTML=`<div class="empty"><div class="empty-icon">📋</div><div class="empty-title">${D.shifts.length?'No shifts match filter':'No shifts logged'}</div><div class="empty-sub">${D.shifts.length?'Try a different date range':'Start tracking to see history here'}</div></div>`;
@@ -2061,6 +2128,10 @@ function renderSettings() {
   document.getElementById('s-gps-lat').value=D.settings.gpsLat||'';
   document.getElementById('s-gps-lng').value=D.settings.gpsLng||'';
   document.getElementById('s-gps-radius').value=D.settings.gpsRadius||100;
+  document.getElementById('s-pay-period').value = D.settings.payPeriodType || 'biweekly';
+  document.getElementById('s-pay-start').value = D.settings.payPeriodStart || '';
+  document.getElementById('s-ot-threshold').value = D.settings.overtimeThreshold || '';
+  document.getElementById('s-ot-rate').value = D.settings.overtimeRate || '';
   const enabled = D.settings.gpsEnabled||false;
   document.getElementById('s-gps-enabled').checked = enabled;
   document.getElementById('gps-detail').style.display = enabled ? 'block' : 'none';
