@@ -6,7 +6,9 @@
 <title>ShiftForge — Work Hard. Level Up.</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
 :root {
   --bg:       #080810;
@@ -212,6 +214,16 @@ body::before {
   background: linear-gradient(90deg, var(--purple), var(--gold));
   transition: width 0.8s cubic-bezier(0.34,1.56,0.64,1);
   box-shadow: 0 0 10px rgba(124,92,252,0.5);
+}
+.goal-label { font-family:var(--font-display); font-size:20px; color:var(--orange); letter-spacing:1px; }
+.goal-fill-red { background: linear-gradient(90deg, #ff4757, #ff6b81) !important; box-shadow: 0 0 10px rgba(255,71,87,0.5) !important; }
+.goal-fill-orange { background: linear-gradient(90deg, #ff8c42, #ffa94d) !important; box-shadow: 0 0 10px rgba(255,140,66,0.5) !important; }
+.goal-fill-yellow { background: linear-gradient(90deg, #f5c842, #ffd93d) !important; box-shadow: 0 0 10px rgba(245,200,66,0.5) !important; }
+.goal-fill-green { background: linear-gradient(90deg, #00c853, #00e676) !important; box-shadow: 0 0 10px rgba(0,200,83,0.5) !important; }
+@keyframes confettiFall { 0%{transform:translateY(-10px) rotate(0deg);opacity:1} 100%{transform:translateY(100vh) rotate(720deg);opacity:0} }
+.confetti-piece {
+  position:absolute; width:10px; height:10px; border-radius:2px;
+  animation: confettiFall 3s ease-in forwards;
 }
 
 /* ── KPI CARDS ── */
@@ -493,6 +505,14 @@ body::before {
 }
 #clock-elapsed-label {
   font-size:10px; font-family:var(--font-mono); color:var(--text3);
+  letter-spacing:2px; margin-bottom:6px; display:none;
+}
+#clock-running-money {
+  font-family:var(--font-display); font-size:28px; letter-spacing:2px;
+  color:var(--green); display:none; margin-bottom:2px;
+}
+#clock-running-label {
+  font-size:10px; font-family:var(--font-mono); color:var(--text3);
   letter-spacing:2px; margin-bottom:14px; display:none;
 }
 .clock-btns { display:flex; gap:10px; justify-content:center; }
@@ -590,14 +610,18 @@ body::before {
       </div>
     </div>
 
-    <!-- XP Progress -->
-    <div class="card" style="background:linear-gradient(135deg,rgba(124,92,252,0.12),rgba(245,200,66,0.05));border-color:rgba(124,92,252,0.2);">
+    <!-- Weekly Goal Progress -->
+    <div class="card" id="goal-card" style="border-color:rgba(255,140,66,0.2);">
       <div class="xp-wrap">
         <div class="xp-header">
-          <div class="xp-level" id="xp-level-display">LEVEL 1</div>
-          <div class="xp-next" id="xp-next-display">0 / 200 XP</div>
+          <div class="goal-label" id="goal-label">WEEKLY GOAL</div>
+          <div class="xp-next" id="goal-next-display">0h / 40h</div>
         </div>
-        <div class="xp-bar"><div class="xp-fill" id="xp-fill" style="width:0%"></div></div>
+        <div class="xp-bar"><div class="xp-fill" id="goal-fill" style="width:0%"></div></div>
+        <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:10px;font-family:var(--font-mono);" id="goal-meta">
+          <span id="goal-pct" style="color:var(--text3);">0%</span>
+          <span id="goal-remaining" style="color:var(--text3);">40h to goal</span>
+        </div>
       </div>
     </div>
 
@@ -643,12 +667,14 @@ body::before {
       <div id="clock-date-display"></div>
       <div id="clock-elapsed">00:00:00</div>
       <div id="clock-elapsed-label">ELAPSED THIS SHIFT</div>
+      <div id="clock-running-money">$0.00</div>
+      <div id="clock-running-label">EARNED THIS SHIFT</div>
       <div class="clock-btns">
         <button class="clock-btn clock-btn-in" id="btn-clock-in" onclick="doClock('in')">CLOCK IN</button>
         <button class="clock-btn clock-btn-out" id="btn-clock-out" onclick="doClock('out')" disabled>CLOCK OUT</button>
       </div>
       <div id="clock-status">Not clocked in</div>
-      <div class="gps-badge">📍 GPS auto-clock — coming soon</div>
+      <div class="gps-badge" id="gps-badge">📍 GPS · <span id="gps-badge-text">off</span></div>
     </div>
 
     <button class="log-btn" onclick="openLogModal()">
@@ -693,6 +719,16 @@ body::before {
       <div class="kpi-card gold">
         <div class="kpi-label">Total Earned</div>
         <div class="kpi-value gold" id="hist-earned">$0</div>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:14px;">
+      <div class="card-title">Filter by Date</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;" id="history-filters">
+        <select id="filter-year" style="flex:1;min-width:90px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:9px 10px;font-size:12px;color:var(--text);outline:none;font-family:var(--font-mono);"><option value="">All Years</option></select>
+        <select id="filter-quarter" style="flex:1;min-width:80px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:9px 10px;font-size:12px;color:var(--text);outline:none;font-family:var(--font-mono);"><option value="">All Quarters</option></select>
+        <select id="filter-month" style="flex:1;min-width:85px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:9px 10px;font-size:12px;color:var(--text);outline:none;font-family:var(--font-mono);"><option value="">All Months</option></select>
+        <select id="filter-week" style="flex:1;min-width:80px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:9px 10px;font-size:12px;color:var(--text);outline:none;font-family:var(--font-mono);"><option value="">All Weeks</option></select>
+        <select id="filter-day" style="flex:1;min-width:70px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:9px 10px;font-size:12px;color:var(--text);outline:none;font-family:var(--font-mono);"><option value="">All Days</option></select>
       </div>
     </div>
     <div class="card">
@@ -751,19 +787,48 @@ body::before {
       <div class="card-title">Profile</div>
       <div class="settings-item">
         <div><div class="settings-label">Name</div></div>
-        <input class="settings-input" id="s-name" placeholder="Your name" onchange="saveSetting('name',this.value)">
+        <input class="settings-input" id="s-name" placeholder="Your name">
       </div>
       <div class="settings-item">
         <div><div class="settings-label">Default Hourly Rate</div><div class="settings-sub">Used to calculate earnings</div></div>
-        <input class="settings-input" id="s-rate" type="number" placeholder="$0.00" step="0.01" onchange="saveSetting('rate',this.value)">
+        <input class="settings-input" id="s-rate" type="number" placeholder="$0.00" step="0.01">
       </div>
       <div class="settings-item">
         <div><div class="settings-label">Weekly Hours Goal</div><div class="settings-sub">Target hours per week</div></div>
-        <input class="settings-input" id="s-goal" type="number" placeholder="40" onchange="saveSetting('weeklyGoal',this.value)">
+        <input class="settings-input" id="s-goal" type="number" placeholder="40">
       </div>
       <div class="settings-item">
         <div><div class="settings-label">Tax Rate (%)</div><div class="settings-sub">For net pay estimates</div></div>
-        <input class="settings-input" id="s-tax" type="number" placeholder="0" step="0.5" onchange="saveSetting('taxRate',this.value)">
+        <input class="settings-input" id="s-tax" type="number" placeholder="0" step="0.5">
+      </div>
+      <button class="btn btn-primary" style="margin-top:16px;" onclick="saveAllSettings()">💾 Save Settings</button>
+      <div id="settings-saved-msg" style="font-size:11px;font-family:var(--font-mono);color:var(--green);margin-top:8px;text-align:center;display:none;">Settings saved ✓</div>
+    </div>
+    <div class="card" id="gps-settings-card">
+      <div class="card-title">GPS Auto-Clock</div>
+      <div class="settings-item">
+        <div><div class="settings-label">Enable Geofencing</div><div class="settings-sub">Auto clock-in/out based on location</div></div>
+        <label style="position:relative;display:inline-block;width:44px;height:24px;">
+          <input type="checkbox" id="s-gps-enabled" onchange="onGPSEnableChange()" style="opacity:0;width:0;height:0;">
+          <span style="position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:var(--bg4);border-radius:24px;transition:0.2s;" id="gps-toggle-track">
+            <span style="position:absolute;content:'';height:18px;width:18px;left:3px;bottom:3px;background:var(--text3);border-radius:50%;transition:0.2s;" id="gps-toggle-thumb"></span>
+          </span>
+        </label>
+      </div>
+      <div id="gps-detail" style="display:none;">
+        <div class="settings-item">
+          <div><div class="settings-label">Work Zone Location</div><div class="settings-sub">Latitude, Longitude</div></div>
+          <div style="display:flex;gap:4px;flex-wrap:wrap;">
+            <input class="settings-input" id="s-gps-lat" placeholder="Lat" type="number" step="0.0001" style="width:80px;">
+            <input class="settings-input" id="s-gps-lng" placeholder="Lng" type="number" step="0.0001" style="width:80px;">
+          </div>
+        </div>
+        <div class="settings-item">
+          <div><div class="settings-label">Radius (meters)</div><div class="settings-sub">Distance from center to trigger</div></div>
+          <input class="settings-input" id="s-gps-radius" type="number" placeholder="100" step="10" style="width:70px;">
+        </div>
+        <button class="btn btn-ghost" style="margin-top:8px;" onclick="openMapPicker()">🗺️ Pick on Map</button>
+        <div id="gps-status" style="font-size:11px;font-family:var(--font-mono);color:var(--text3);margin-top:8px;padding:8px;background:var(--bg3);border-radius:6px;">GPS not active</div>
       </div>
     </div>
     <div class="card">
@@ -835,6 +900,24 @@ body::before {
 </div>
 
 
+<!-- ══ MAP PICKER MODAL ══ -->
+<div class="modal-overlay hidden" id="map-modal">
+  <div class="modal" style="max-height:95vh;">
+    <div class="modal-handle"></div>
+    <div class="modal-title">SET WORK ZONE</div>
+    <div class="modal-sub">Drag the marker to your work location</div>
+    <div id="map-picker-container" style="height:320px;border-radius:12px;margin-bottom:12px;background:var(--bg4);"></div>
+    <div style="display:flex;gap:8px;font-size:10px;font-family:var(--font-mono);color:var(--text3);margin-bottom:14px;">
+      <span>📍 <span id="map-coords">—</span></span>
+      <span>⭕ Radius: <span id="map-radius-display">100m</span></span>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeMapPicker()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveMapLocation()">Save Location</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ CUSTOM DIALOG ══ -->
 <div id="sf-dialog-overlay">
   <div id="sf-dialog-box">
@@ -842,6 +925,16 @@ body::before {
     <div id="sf-dialog-title"></div>
     <div id="sf-dialog-msg"></div>
     <div id="sf-dialog-btns"></div>
+  </div>
+</div>
+
+<!-- Goal celebration overlay -->
+<div id="goal-celebration" style="position:fixed;inset:0;z-index:950;display:none;pointer-events:none;">
+  <div id="goal-confetti" style="position:absolute;inset:0;overflow:hidden;"></div>
+  <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;">
+    <div style="font-size:64px;line-height:1;margin-bottom:8px;">🎉</div>
+    <div style="font-family:var(--font-display);font-size:42px;letter-spacing:3px;background:linear-gradient(135deg,var(--gold),var(--green));-webkit-background-clip:text;-webkit-text-fill-color:transparent;">GOAL REACHED!</div>
+    <div style="font-size:11px;font-family:var(--font-mono);color:var(--text3);margin-top:6px;">Weekly hours target met 💪</div>
   </div>
 </div>
 
@@ -882,7 +975,7 @@ let _authMode = 'signin';
 // ======================================================================
 let D = {
   shifts: [],       // [{id,date,startTime,endTime,hours,rate,job,notes,xp}]
-  settings: { name:'', rate:0, weeklyGoal:40, taxRate:0 },
+  settings: { name:'', rate:0, weeklyGoal:40, taxRate:0, gpsEnabled:false, gpsLat:null, gpsLng:null, gpsRadius:100 },
   xp: 0,
   level: 1,
   streak: 0,
@@ -907,9 +1000,18 @@ function save() {
   }, 900);
 }
 
-function saveSetting(k,v) {
-  D.settings[k] = isNaN(v)||v==='' ? v : parseFloat(v)||v;
+function saveAllSettings() {
+  D.settings.name       = document.getElementById('s-name').value;
+  D.settings.rate       = parseFloat(document.getElementById('s-rate').value) || 0;
+  D.settings.weeklyGoal = parseFloat(document.getElementById('s-goal').value) || 40;
+  D.settings.taxRate    = parseFloat(document.getElementById('s-tax').value) || 0;
+  D.settings.gpsLat     = parseFloat(document.getElementById('s-gps-lat').value) || null;
+  D.settings.gpsLng     = parseFloat(document.getElementById('s-gps-lng').value) || null;
+  D.settings.gpsRadius  = parseFloat(document.getElementById('s-gps-radius').value) || 100;
   save(); renderAll();
+  updateGPSBadge();
+  const msg = document.getElementById('settings-saved-msg');
+  if(msg) { msg.style.display='block'; setTimeout(()=>msg.style.display='none',2000); }
 }
 
 // ======================================================================
@@ -982,6 +1084,7 @@ async function bootApp() {
 
   renderAll();
   startClock();
+  if(D.settings.gpsEnabled) { setTimeout(initGPS, 1000); }
 }
 
 async function doSignOut() {
@@ -992,6 +1095,160 @@ async function doSignOut() {
     document.getElementById('bottom-nav').style.display='none';
     document.getElementById('auth-screen').style.display='flex';
   },'danger');
+}
+
+// ======================================================================
+// GPS GEOFENCING
+// ======================================================================
+let geoWatchId = null;
+let wasInsideGeofence = false;
+let mapPickerMap = null, mapPickerMarker = null, mapPickerCircle = null;
+
+function updateGPSToggleUI() {
+  const enabled = document.getElementById('s-gps-enabled').checked;
+  const track = document.getElementById('gps-toggle-track');
+  const thumb = document.getElementById('gps-toggle-thumb');
+  if(track) { track.style.background = enabled ? 'var(--purple)' : 'var(--bg4)'; }
+  if(thumb) { thumb.style.left = enabled ? '23px' : '3px'; thumb.style.background = enabled ? '#fff' : 'var(--text3)'; }
+}
+
+function onGPSEnableChange() {
+  const enabled = document.getElementById('s-gps-enabled').checked;
+  D.settings.gpsEnabled = enabled;
+  document.getElementById('gps-detail').style.display = enabled ? 'block' : 'none';
+  updateGPSToggleUI();
+  if(enabled) { initGPS(); } else { stopGPS(); }
+  updateGPSBadge();
+}
+
+function initGPS() {
+  if(geoWatchId !== null) return;
+  if(!navigator.geolocation) {
+    document.getElementById('gps-status').textContent = '⚠️ Geolocation not supported by your browser';
+    return;
+  }
+  const statusEl = document.getElementById('gps-status');
+  statusEl.textContent = '📍 Acquiring GPS position...';
+  geoWatchId = navigator.geolocation.watchPosition(
+    pos => {
+      const {latitude, longitude, accuracy} = pos.coords;
+      const lat = D.settings.gpsLat;
+      const lng = D.settings.gpsLng;
+      const radius = D.settings.gpsRadius || 100;
+      statusEl.textContent = `📍 ${latitude.toFixed(6)}, ${longitude.toFixed(6)} (±${accuracy.toFixed(0)}m)`;
+
+      if(lat !== null && lng !== null) {
+        const dist = getDistance(latitude, longitude, lat, lng);
+        const inside = dist <= radius;
+        const statusText = inside ? `✅ Inside zone (${dist.toFixed(0)}m from center)` : `📍 Outside zone (${dist.toFixed(0)}m)`;
+        statusEl.textContent += ` · ${statusText}`;
+
+        // Auto clock-in/out on zone transition
+        if(inside && !wasInsideGeofence) {
+          wasInsideGeofence = true;
+          if(!clockInTime) {
+            doClock('in');
+            sfAlert('📍','Auto Clocked In','You entered your work zone and were automatically clocked in.');
+          }
+        } else if(!inside && wasInsideGeofence) {
+          wasInsideGeofence = false;
+          if(clockInTime) {
+            doClock('out');
+          }
+        } else if(inside && clockInTime) {
+          wasInsideGeofence = true;
+        }
+      }
+    },
+    err => {
+      document.getElementById('gps-status').textContent = '⚠️ GPS error: ' + err.message;
+    },
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
+  );
+  updateGPSBadge();
+}
+
+function stopGPS() {
+  if(geoWatchId !== null) {
+    navigator.geolocation.clearWatch(geoWatchId);
+    geoWatchId = null;
+  }
+  wasInsideGeofence = false;
+  document.getElementById('gps-status').textContent = 'GPS not active';
+  updateGPSBadge();
+}
+
+function getDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371000;
+  const dLat = (lat2-lat1)*Math.PI/180;
+  const dLon = (lon2-lon1)*Math.PI/180;
+  const a = Math.sin(dLat/2)*Math.sin(dLat/2) +
+            Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*
+            Math.sin(dLon/2)*Math.sin(dLon/2);
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function updateGPSBadge() {
+  const el = document.getElementById('gps-badge-text');
+  if(!el) return;
+  if(D.settings.gpsEnabled && geoWatchId !== null) {
+    el.textContent = 'active';
+    el.style.color = 'var(--green)';
+  } else if(D.settings.gpsEnabled) {
+    el.textContent = 'starting...';
+    el.style.color = 'var(--gold)';
+  } else {
+    el.textContent = 'off';
+    el.style.color = 'var(--text3)';
+  }
+}
+
+function openMapPicker() {
+  const modal = document.getElementById('map-modal');
+  modal.classList.remove('hidden');
+  const lat = D.settings.gpsLat || 40.7128;
+  const lng = D.settings.gpsLng || -74.0060;
+  const rad = D.settings.gpsRadius || 100;
+  document.getElementById('map-coords').textContent = lat.toFixed(6)+', '+lng.toFixed(6);
+  document.getElementById('map-radius-display').textContent = rad+'m';
+
+  setTimeout(() => {
+    const container = document.getElementById('map-picker-container');
+    if(!container) return;
+    if(mapPickerMap) { mapPickerMap.remove(); }
+    mapPickerMap = L.map(container).setView([lat, lng], 15);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors', maxZoom: 19
+    }).addTo(mapPickerMap);
+
+    mapPickerMarker = L.marker([lat, lng], {draggable:true}).addTo(mapPickerMap);
+    mapPickerCircle = L.circle([lat, lng], {radius:rad, color:'#7c5cfc', fillColor:'#7c5cfc', fillOpacity:0.15, weight:2}).addTo(mapPickerMap);
+
+    mapPickerMarker.on('dragend', function() {
+      const pos = mapPickerMarker.getLatLng();
+      document.getElementById('map-coords').textContent = pos.lat.toFixed(6)+', '+pos.lng.toFixed(6);
+      mapPickerCircle.setLatLng(pos);
+    });
+
+    mapPickerMap.on('click', function(e) {
+      mapPickerMarker.setLatLng(e.latlng);
+      mapPickerCircle.setLatLng(e.latlng);
+      document.getElementById('map-coords').textContent = e.latlng.lat.toFixed(6)+', '+e.latlng.lng.toFixed(6);
+    });
+  }, 300);
+}
+
+function closeMapPicker() {
+  document.getElementById('map-modal').classList.add('hidden');
+  if(mapPickerMap) { mapPickerMap.remove(); mapPickerMap = null; mapPickerMarker = null; mapPickerCircle = null; }
+}
+
+function saveMapLocation() {
+  if(!mapPickerMarker) return;
+  const pos = mapPickerMarker.getLatLng();
+  document.getElementById('s-gps-lat').value = pos.lat.toFixed(6);
+  document.getElementById('s-gps-lng').value = pos.lng.toFixed(6);
+  closeMapPicker();
 }
 
 // ======================================================================
@@ -1247,6 +1504,33 @@ function deleteShift(id) {
   },'danger');
 }
 
+let _goalCelebrated = false;
+
+function showGoalCelebration() {
+  const ov = document.getElementById('goal-celebration');
+  if(!ov) return;
+  ov.style.display = 'block';
+  const confetti = document.getElementById('goal-confetti');
+  if(confetti) {
+    const colors = ['#ff4757','#ff8c42','#f5c842','#00e676','#7c5cfc','#00e5cc','#ff6b81','#9b7fff'];
+    confetti.innerHTML = '';
+    for(let i=0;i<60;i++) {
+      const c = document.createElement('div');
+      c.className = 'confetti-piece';
+      c.style.left = Math.random()*100+'%';
+      c.style.top = '-10px';
+      c.style.background = colors[Math.floor(Math.random()*colors.length)];
+      c.style.width = (6+Math.random()*8)+'px';
+      c.style.height = (6+Math.random()*8)+'px';
+      c.style.borderRadius = Math.random()>0.5?'50%':'2px';
+      c.style.animationDuration = (2+Math.random()*2)+'s';
+      c.style.animationDelay = Math.random()*1.5+'s';
+      confetti.appendChild(c);
+    }
+  }
+  setTimeout(() => { ov.style.display = 'none'; }, 5000);
+}
+
 // ======================================================================
 // RENDERING
 // ======================================================================
@@ -1264,11 +1548,42 @@ function renderHome() {
   document.getElementById('home-greeting').textContent=`${greeting}, ${name.toUpperCase()}`;
   document.getElementById('home-date').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
 
-  // XP
-  const {lvl,pct,toNext} = xpProgress(D.xp);
-  document.getElementById('xp-level-display').textContent=`LEVEL ${lvl}`;
-  document.getElementById('xp-next-display').textContent=`${D.xp} / ${LEVEL_THRESHOLDS[lvl+1]||'MAX'} XP`;
-  document.getElementById('xp-fill').style.width=pct+'%';
+  // Weekly Goal Bar
+  const goal = D.settings.weeklyGoal || 40;
+  const weekShiftsGoal = shiftsByPeriod('week');
+  const weekHrs = weekShiftsGoal.reduce((s,x)=>s+parseFloat(x.hours||0),0);
+  const goalPct = Math.min(100, (weekHrs / goal) * 100);
+  const goalFill = document.getElementById('goal-fill');
+  const goalEl = document.getElementById('goal-card');
+  if(goalFill) {
+    goalFill.style.width = goalPct+'%';
+    goalFill.className = 'xp-fill';
+    if(goalPct >= 100) goalFill.classList.add('goal-fill-green');
+    else if(goalPct >= 75) goalFill.classList.add('goal-fill-yellow');
+    else if(goalPct >= 50) goalFill.classList.add('goal-fill-orange');
+    else goalFill.classList.add('goal-fill-red');
+  }
+  if(goalEl) {
+    if(goalPct >= 100) goalEl.style.borderColor = 'rgba(0,230,118,0.3)';
+    else if(goalPct >= 75) goalEl.style.borderColor = 'rgba(245,200,66,0.3)';
+    else if(goalPct >= 50) goalEl.style.borderColor = 'rgba(255,140,66,0.3)';
+    else goalEl.style.borderColor = 'rgba(255,71,87,0.3)';
+  }
+  document.getElementById('goal-next-display').textContent = `${fmtHrs(weekHrs)} / ${fmtHrs(goal)}`;
+  document.getElementById('goal-pct').textContent = Math.round(goalPct)+'%';
+  document.getElementById('goal-pct').style.color = goalPct>=100?'var(--green)':goalPct>=75?'var(--gold)':goalPct>=50?'var(--orange)':'var(--red)';
+  document.getElementById('goal-remaining').textContent = goalPct>=100?'Goal reached! 🎉':`${fmtHrs(goal-weekHrs)} to goal`;
+
+  // Goal celebration
+  if(goalPct >= 100 && !_goalCelebrated) {
+    _goalCelebrated = true;
+    showGoalCelebration();
+  } else if(goalPct < 100) {
+    _goalCelebrated = false;
+  }
+
+  // Header level
+  const {lvl} = xpProgress(D.xp);
   document.getElementById('header-level').textContent=`⭐ LV ${lvl}`;
 
   // Streak
@@ -1345,19 +1660,94 @@ function renderWeekChart() {
   document.getElementById('week-labels').innerHTML=cols.map(c=>`<span>${c.label}</span>`).join('');
 }
 
+// ── History Filter ──
+let historyFilter = { year:null, quarter:null, month:null, week:null, day:null };
+
+function getWeekNumber(d) {
+  d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay()||7));
+  const ys = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+  return Math.ceil((((d - ys) / 86400000) + 1)/7);
+}
+
+function getFilteredShifts() {
+  let f = D.shifts;
+  if(historyFilter.year !== null)    f = f.filter(s => new Date(s.date+'T12:00:00').getFullYear() === historyFilter.year);
+  if(historyFilter.quarter !== null) f = f.filter(s => Math.floor(new Date(s.date+'T12:00:00').getMonth()/3)+1 === historyFilter.quarter);
+  if(historyFilter.month !== null)   f = f.filter(s => new Date(s.date+'T12:00:00').getMonth()+1 === historyFilter.month);
+  if(historyFilter.week !== null)    f = f.filter(s => getWeekNumber(new Date(s.date+'T12:00:00')) === historyFilter.week);
+  if(historyFilter.day !== null)     f = f.filter(s => new Date(s.date+'T12:00:00').getDate() === historyFilter.day);
+  return f;
+}
+
+function getFilterLabel() {
+  const parts = [];
+  const y = historyFilter.year;
+  const q = historyFilter.quarter;
+  const m = historyFilter.month;
+  const w = historyFilter.week;
+  const d = historyFilter.day;
+  if(y !== null) parts.push(String(y));
+  if(q !== null) parts.push('Q'+q);
+  if(m !== null) parts.push(['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][m-1]);
+  if(w !== null) parts.push('W'+w);
+  if(d !== null) parts.push('Day '+d);
+  return parts.length ? parts.join(' · ') : 'All Time';
+}
+
+function populateHistoryFilters() {
+  const years = [...new Set(D.shifts.map(s => new Date(s.date+'T12:00:00').getFullYear()))].sort((a,b)=>b-a);
+  const yearEl = document.getElementById('filter-year');
+  if(!yearEl) return;
+  yearEl.innerHTML = '<option value="">All Years</option>'+years.map(y => `<option value="${y}"${historyFilter.year===y?' selected':''}>${y}</option>`).join('');
+
+  const quarterEl = document.getElementById('filter-quarter');
+  quarterEl.innerHTML = '<option value="">All Quarters</option>'+[1,2,3,4].map(q => `<option value="${q}"${historyFilter.quarter===q?' selected':''}>Q${q}</option>`).join('');
+
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const monthEl = document.getElementById('filter-month');
+  monthEl.innerHTML = '<option value="">All Months</option>'+months.map((m,i) => `<option value="${i+1}"${historyFilter.month===i+1?' selected':''}>${m}</option>`).join('');
+
+  // Weeks: from shifts in selected year or all shifts
+  let shiftPool = D.shifts;
+  if(historyFilter.year !== null) shiftPool = shiftPool.filter(s => new Date(s.date+'T12:00:00').getFullYear() === historyFilter.year);
+  const weeks = [...new Set(shiftPool.map(s => getWeekNumber(new Date(s.date+'T12:00:00'))))].sort((a,b)=>a-b);
+  const weekEl = document.getElementById('filter-week');
+  weekEl.innerHTML = '<option value="">All Weeks</option>'+weeks.map(w => `<option value="${w}"${historyFilter.week===w?' selected':''}>W${w}</option>`).join('');
+
+  const dayEl = document.getElementById('filter-day');
+  dayEl.innerHTML = '<option value="">All Days</option>'+[...Array(31).keys()].map(i => `<option value="${i+1}"${historyFilter.day===i+1?' selected':''}>${i+1}</option>`).join('');
+}
+
+function applyHistoryFilter() {
+  historyFilter.year    = parseInt(document.getElementById('filter-year').value) || null;
+  historyFilter.quarter = parseInt(document.getElementById('filter-quarter').value) || null;
+  historyFilter.month   = parseInt(document.getElementById('filter-month').value) || null;
+  historyFilter.week    = parseInt(document.getElementById('filter-week').value) || null;
+  historyFilter.day     = parseInt(document.getElementById('filter-day').value) || null;
+  renderHistory();
+}
+
 function renderHistory() {
-  const all=D.shifts;
+  populateHistoryFilters();
+  const filtered = getFilteredShifts();
+  const all = filtered;
   const sum=(k)=>all.reduce((s,x)=>s+parseFloat(x[k]||0),0);
   document.getElementById('hist-count').textContent=all.length;
   document.getElementById('hist-hours').textContent=fmtHrs(sum('hours'));
   document.getElementById('hist-earned').textContent=fmt(sum('pay'));
 
   if(!all.length) {
-    document.getElementById('history-list').innerHTML=`<div class="empty"><div class="empty-icon">📋</div><div class="empty-title">No shifts logged</div><div class="empty-sub">Start tracking to see history here</div></div>`;
+    document.getElementById('history-list').innerHTML=`<div class="empty"><div class="empty-icon">📋</div><div class="empty-title">${D.shifts.length?'No shifts match filter':'No shifts logged'}</div><div class="empty-sub">${D.shifts.length?'Try a different date range':'Start tracking to see history here'}</div></div>`;
     return;
   }
   document.getElementById('history-list').innerHTML=all.map(s=>shiftHTML(s)).join('');
 }
+
+// Filter change via delegation (selects are recreated on populate)
+document.getElementById('history-filters').addEventListener('change', function(e) {
+  if(e.target.tagName === 'SELECT') applyHistoryFilter();
+});
 
 function renderAchievements() {
   const {lvl,pct,toNext}=xpProgress(D.xp);
@@ -1412,6 +1802,13 @@ function renderSettings() {
   document.getElementById('s-rate').value=D.settings.rate||'';
   document.getElementById('s-goal').value=D.settings.weeklyGoal||40;
   document.getElementById('s-tax').value=D.settings.taxRate||0;
+  document.getElementById('s-gps-lat').value=D.settings.gpsLat||'';
+  document.getElementById('s-gps-lng').value=D.settings.gpsLng||'';
+  document.getElementById('s-gps-radius').value=D.settings.gpsRadius||100;
+  const enabled = D.settings.gpsEnabled||false;
+  document.getElementById('s-gps-enabled').checked = enabled;
+  document.getElementById('gps-detail').style.display = enabled ? 'block' : 'none';
+  updateGPSToggleUI();
 }
 
 // ======================================================================
@@ -1436,6 +1833,9 @@ document.getElementById('log-rate').addEventListener('input', updatePreview);
 // Close modal on overlay tap
 document.getElementById('log-modal').addEventListener('click', function(e){
   if(e.target===this) closeModal();
+});
+document.getElementById('map-modal').addEventListener('click', function(e){
+  if(e.target===this) closeMapPicker();
 });
 
 
@@ -1482,11 +1882,14 @@ let clockElapsed  = 0;    // seconds elapsed
 
 function tickClock() {
   const now = new Date();
-  const hh  = String(now.getHours()).padStart(2,'0');
+  let h = now.getHours();
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  h = h % 12 || 12;
+  const hh  = String(h).padStart(2,'0');
   const mm  = String(now.getMinutes()).padStart(2,'0');
   const ss  = String(now.getSeconds()).padStart(2,'0');
   const el  = document.getElementById('clock-time-display');
-  if(el) el.textContent = `${hh}:${mm}:${ss}`;
+  if(el) el.textContent = `${hh}:${mm}:${ss} ${ampm}`;
 
   const dateEl = document.getElementById('clock-date-display');
   if(dateEl) dateEl.textContent = now.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
@@ -1498,6 +1901,11 @@ function tickClock() {
     const es   = String(diff%60).padStart(2,'0');
     const elapsed = document.getElementById('clock-elapsed');
     if(elapsed) elapsed.textContent = `${eh}:${em}:${es}`;
+
+    const rate = D.settings.rate || 0;
+    const earned = (rate / 3600) * diff;
+    const moneyEl = document.getElementById('clock-running-money');
+    if(moneyEl) moneyEl.textContent = fmt(earned);
   }
 }
 
@@ -1515,6 +1923,9 @@ function doClock(action) {
     document.getElementById('btn-clock-out').disabled = false;
     document.getElementById('clock-elapsed').style.display       = 'block';
     document.getElementById('clock-elapsed-label').style.display = 'block';
+    document.getElementById('clock-running-money').style.display = 'block';
+    document.getElementById('clock-running-label').style.display = 'block';
+    document.getElementById('clock-running-money').textContent   = '$0.00';
     document.getElementById('clock-elapsed').textContent         = '00:00:00';
     const status = document.getElementById('clock-status');
     status.textContent = '🟢 Clocked in at ' + clockInTime.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
@@ -1550,6 +1961,8 @@ function doClock(action) {
     document.getElementById('btn-clock-in').textContent = 'CLOCK IN';
     document.getElementById('clock-elapsed').style.display       = 'none';
     document.getElementById('clock-elapsed-label').style.display = 'none';
+    document.getElementById('clock-running-money').style.display = 'none';
+    document.getElementById('clock-running-label').style.display = 'none';
     const status = document.getElementById('clock-status');
     status.textContent = 'Shift ended — confirm below';
     status.className   = 'clock-status';
