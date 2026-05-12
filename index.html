@@ -255,6 +255,7 @@ body::before {
 .kpi-value.teal { color:var(--teal); }
 .kpi-value.red { color:var(--red); }
 .kpi-sub { font-size:10px; font-family:var(--font-mono); color:var(--text3); margin-top:4px; }
+.kpi-grid-hist .kpi-value { font-size:clamp(16px,4.5vw,22px); letter-spacing:0; }
 
 /* ── STREAK ── */
 .streak-card {
@@ -570,7 +571,7 @@ body::before {
   display:inline-flex; align-items:center; gap:5px;
   background:rgba(124,92,252,0.1); border:1px solid rgba(124,92,252,0.2);
   border-radius:20px; padding:4px 10px; margin-top:8px;
-  font-size:10px; font-family:var(--font-mono); color:var(--purple2);
+  font-size:10px; font-family:var(--font-mono); color:var(--purple2); cursor:pointer;
 }
 
 /* ── CALENDAR ── */
@@ -815,6 +816,7 @@ html.theme-pro #streak-flame,
 html.theme-pro .log-btn-icon,
 html.theme-pro .update-icon,
 html.theme-pro .danger-icon { display: none; }
+html.theme-pro .gps-icon { display: none; }
 html.theme-pro .log-btn { justify-content: center; }
 html.theme-pro .mob-header {
   backdrop-filter: none;
@@ -960,7 +962,7 @@ html.theme-pro .bottom-nav {
         <button class="clock-btn clock-btn-out" id="btn-clock-out" onclick="doClock('out')" disabled>CLOCK OUT</button>
       </div>
       <div id="clock-status">Not clocked in</div>
-      <div class="gps-badge" id="gps-badge">📍 GPS · <span id="gps-badge-text">off</span></div>
+      <div class="gps-badge" id="gps-badge" onclick="toggleGPS()"><span class="gps-icon">📍 </span>GPS · <span id="gps-badge-text">off</span></div>
     </div>
 
     <button class="log-btn" onclick="openLogModal()">
@@ -996,7 +998,7 @@ html.theme-pro .bottom-nav {
       </div>
       <button class="btn btn-primary" style="flex:none;padding:10px 16px;font-size:13px;" onclick="openLogModal()">+ Log</button>
     </div>
-    <div class="kpi-grid" style="grid-template-columns:1fr 1fr 1fr 1fr;">
+    <div class="kpi-grid kpi-grid-hist" style="grid-template-columns:1fr 1fr 1fr 1fr;">
       <div class="kpi-card purple">
         <div class="kpi-label">Total Shifts</div>
         <div class="kpi-value purple" id="hist-count">0</div>
@@ -1646,6 +1648,18 @@ function updateGPSBadge() {
   } else {
     el.textContent = 'off';
     el.style.color = 'var(--text3)';
+  }
+}
+
+function toggleGPS() {
+  if(!D.settings.gpsEnabled) {
+    sfConfirm('📍','Enable GPS','Turn on GPS for auto clock-in when you arrive at your work zone?', () => {
+      document.getElementById('s-gps-enabled').checked = true;
+      onGPSEnableChange();
+      showPage('settings');
+    });
+  } else {
+    showPage('settings');
   }
 }
 
