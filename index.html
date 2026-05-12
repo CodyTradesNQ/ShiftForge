@@ -1150,6 +1150,10 @@ html.theme-pro .bottom-nav {
         <div id="s-sync" style="font-size:11px;font-family:var(--font-mono);color:var(--green);">✓ synced</div>
       </div>
       <button class="signout-btn" onclick="doSignOut()">Sign Out</button>
+      <div style="border-top:1px solid var(--border);margin:14px 0;padding-top:6px;">
+        <div style="font-size:9px;letter-spacing:2.5px;text-transform:uppercase;font-family:var(--font-mono);color:var(--text3);margin-bottom:8px;text-align:center;">⚠️ Danger Zone</div>
+        <button class="signout-btn" style="border-color:var(--red);" onclick="sfConfirm('⚠️','Reset All Data','This will permanently delete all shifts, XP, achievements, and settings. This cannot be undone.',resetAllData,'danger')">Reset All Data</button>
+      </div>
     </div>
   </div>
 
@@ -1327,6 +1331,21 @@ function applyTheme(name) {
     el.style.borderColor = t === name ? 'var(--purple)' : 'var(--border2)';
     el.style.background = t === name ? 'rgba(124,92,252,0.1)' : 'var(--bg3)';
   });
+}
+
+function resetAllData() {
+  D.shifts = [];
+  D.xp = 0;
+  D.level = 1;
+  D.streak = 0;
+  D.bestStreak = 0;
+  D.lastLogDate = null;
+  D.badges = [];
+  D.settings = { name:'', rate:0, weeklyGoal:40, taxRate:0, gpsEnabled:false, gpsLat:null, gpsLng:null, gpsRadius:100, notificationsPrompted:false, theme:'pro', payPeriodType:'biweekly', payPeriodStart:'', overtimeThreshold:80, overtimeRate:0 };
+  _selectedDay = null;
+  historyFilter = { year:null, quarter:null, month:null, week:null, day:null };
+  save();
+  renderAll();
 }
 
 function saveAllSettings() {
