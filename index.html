@@ -2172,13 +2172,6 @@ function renderWeekChart() {
     goalLine.style.display = goal > 0 ? 'block' : 'none';
   }
 }
-  const maxH=Math.max(...cols.map(c=>c.hrs),1);
-  document.getElementById('week-chart').innerHTML=cols.map(c=>`
-    <div class="week-bar-wrap">
-      <div class="week-bar ${c.isToday?'today':''}" style="height:${Math.max(4,(c.hrs/maxH)*68)}px" title="${fmtHrs(c.hrs)}"></div>
-    </div>`).join('');
-  document.getElementById('week-labels').innerHTML=cols.map(c=>`<span>${c.label}</span>`).join('');
-}
 
 // ── History Filter ──
 let historyFilter = { year:null, quarter:null, month:null, week:null, day:null };
