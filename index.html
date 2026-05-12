@@ -570,7 +570,14 @@ body::before {
 
 /* ── CALENDAR ── */
 .cal-nav { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
-.cal-nav-title { font-family:var(--font-display); font-size:22px; letter-spacing:1px; color:var(--text); }
+.cal-nav-title { font-family:var(--font-display); font-size:22px; letter-spacing:1px; color:var(--text); cursor:pointer; user-select:none; }
+.cal-nav-title:hover { color:var(--purple2); }
+.cal-picker { display:none; position:absolute; top:100%; left:50%; transform:translateX(-50%); background:var(--bg3); border:1px solid var(--border2); border-radius:10px; padding:12px; z-index:10; box-shadow:0 8px 32px rgba(0,0,0,0.5); gap:8px; align-items:center; margin-top:4px; }
+.cal-picker select { background:var(--bg4); color:var(--text); border:1px solid var(--border2); border-radius:6px; padding:6px 8px; font-size:13px; font-family:var(--font-body); outline:none; cursor:pointer; }
+.cal-picker select:focus { border-color:var(--purple); }
+.cal-picker-btn { background:var(--purple); color:#fff; border:none; border-radius:6px; padding:6px 12px; font-size:12px; font-family:var(--font-body); font-weight:600; cursor:pointer; }
+.cal-picker-btn:hover { background:var(--purple2); }
+.cal-nav-wrap { position:relative; }
 .cal-nav-btn { background:var(--bg3); border:1px solid var(--border2); border-radius:6px; padding:6px 10px; color:var(--text2); cursor:pointer; font-size:14px; transition:all 0.1s; }
 .cal-nav-btn:hover { background:var(--bg4); color:var(--text); }
 .cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:2px; }
@@ -969,7 +976,14 @@ html.theme-pro .bottom-nav {
       <div class="card-title">Calendar</div>
       <div class="cal-nav">
         <button class="cal-nav-btn" onclick="calMonth(-1)">◀</button>
-        <div class="cal-nav-title" id="cal-title">January 2026</div>
+        <div class="cal-nav-wrap">
+          <div class="cal-nav-title" id="cal-title" onclick="showCalPicker()">January 2026</div>
+          <div class="cal-picker" id="cal-picker">
+            <select id="cal-picker-month"></select>
+            <select id="cal-picker-year"></select>
+            <button class="cal-picker-btn" onclick="goToMonthYear()">Go</button>
+          </div>
+        </div>
         <button class="cal-nav-btn" onclick="calMonth(1)">▶</button>
       </div>
       <div class="cal-grid" id="cal-grid"></div>
@@ -2163,6 +2177,41 @@ function calMonth(delta) {
   renderCalendar();
   renderHistory();
 }
+
+function showCalPicker() {
+  const picker = document.getElementById('cal-picker');
+  if(picker.style.display === 'flex') { picker.style.display = 'none'; return; }
+  const mSel = document.getElementById('cal-picker-month');
+  const ySel = document.getElementById('cal-picker-year');
+  if(!mSel.options.length) {
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    months.forEach((m,i) => { const o = document.createElement('option'); o.value=i; o.textContent=m; mSel.appendChild(o); });
+  }
+  ySel.innerHTML = '';
+  for(let y = _calYear - 50; y <= _calYear + 50; y++) { const o = document.createElement('option'); o.value=y; o.textContent=y; ySel.appendChild(o); }
+  mSel.value = _calMonth;
+  ySel.value = _calYear;
+  picker.style.display = 'flex';
+}
+
+function goToMonthYear() {
+  _calMonth = parseInt(document.getElementById('cal-picker-month').value);
+  _calYear = parseInt(document.getElementById('cal-picker-year').value);
+  document.getElementById('cal-picker').style.display = 'none';
+  _selectedDay = null;
+  historyFilter = { year:null, quarter:null, month:null, week:null, day:null };
+  document.getElementById('day-breakdown').style.display = 'none';
+  renderCalendar();
+  renderHistory();
+}
+
+// Close picker on outside click
+document.addEventListener('click', function(e) {
+  const picker = document.getElementById('cal-picker');
+  if(picker && picker.style.display === 'flex' && !e.target.closest('.cal-nav-wrap') && !e.target.closest('#cal-picker')) {
+    picker.style.display = 'none';
+  }
+});
 
 function getDayBreakdown(dateStr) {
   const dayShifts = D.shifts.filter(s => s.date === dateStr);
