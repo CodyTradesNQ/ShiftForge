@@ -173,13 +173,13 @@ body::before {
 .nav-item {
   flex:1; display:flex; flex-direction:column;
   align-items:center; gap:3px;
-  padding:6px 4px; cursor:pointer;
+  padding:10px 4px; cursor:pointer;
   color:var(--text3); transition:all 0.15s;
   border:none; background:none;
 }
 .nav-item.active { color:var(--purple2); }
-.nav-item .nav-icon { font-size:22px; line-height:1; }
-.nav-item .nav-label { font-size:9px; font-family:var(--font-mono); letter-spacing:1px; text-transform:uppercase; }
+.nav-item .nav-icon { font-size:24px; line-height:1; }
+.nav-item .nav-label { font-size:10px; font-family:var(--font-mono); letter-spacing:1px; text-transform:uppercase; }
 
 /* ── PAGES ── */
 .page { display:none; padding:20px 16px; animation:fadeUp 0.2s ease; }
@@ -247,6 +247,7 @@ body::before {
 .kpi-card.green::before { background: linear-gradient(90deg,var(--green2),var(--green)); }
 .kpi-card.orange::before { background: linear-gradient(90deg,var(--orange),var(--gold)); }
 .kpi-card.teal::before { background: linear-gradient(90deg,var(--teal),var(--green)); }
+.kpi-card.teal::before { background: linear-gradient(90deg,var(--teal),var(--green)); }
 .kpi-card.red::before { background: linear-gradient(90deg,var(--red),var(--orange)); }
 .kpi-label { font-size:9px; letter-spacing:2px; text-transform:uppercase; font-family:var(--font-mono); color:var(--text3); margin-bottom:6px; }
 .kpi-value { font-family:var(--font-display); font-size:28px; letter-spacing:1px; line-height:1; color:var(--text); }
@@ -254,6 +255,7 @@ body::before {
 .kpi-value.green { color:var(--green); }
 .kpi-value.purple { color:var(--purple2); }
 .kpi-value.orange { color:var(--orange); }
+.kpi-value.teal { color:var(--teal); }
 .kpi-sub { font-size:10px; font-family:var(--font-mono); color:var(--text3); margin-top:4px; }
 
 /* ── STREAK ── */
@@ -337,7 +339,12 @@ body::before {
 .milestone-val { font-size:10px; font-family:var(--font-mono); color:var(--text3); margin-top:2px; }
 
 /* ── WEEKLY CHART ── */
+.week-chart-wrap { position:relative; }
 .week-chart { display:flex; align-items:flex-end; gap:6px; height:80px; padding:0 4px; }
+.week-goal-line {
+  position:absolute; left:4px; right:4px; height:0; z-index:1; pointer-events:none;
+  border-top:1px dashed rgba(255,255,255,0.2);
+}
 .week-bar-wrap { flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; height:100%; justify-content:flex-end; }
 .week-bar {
   width:100%; border-radius:4px 4px 0 0;
@@ -604,6 +611,31 @@ body::before {
 .day-bd-label { font-size:8px; font-family:var(--font-mono); color:var(--text3); text-transform:uppercase; letter-spacing:1px; margin-bottom:2px; }
 .day-bd-value { font-family:var(--font-display); font-size:18px; letter-spacing:1px; color:var(--text); }
 
+/* Pay period summary */
+#pp-summary { display:none; margin-bottom:14px; }
+.pp-summary-head { font-size:12px; font-family:var(--font-mono); color:var(--text2); letter-spacing:1px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; }
+.pp-summary-item { padding:12px 0; border-bottom:1px solid var(--border); }
+.pp-summary-item:last-child { border-bottom:none; }
+.pp-summary-period { font-size:13px; font-weight:600; color:var(--text); }
+.pp-summary-detail { display:flex; gap:12px; margin-top:4px; font-size:10px; font-family:var(--font-mono); color:var(--text2); flex-wrap:wrap; }
+
+/* History toolbar */
+.hist-toolbar { display:flex; gap:6px; margin-bottom:10px; flex-wrap:wrap; }
+.hist-toolbar button { background:var(--bg3); border:1px solid var(--border2); border-radius:6px; padding:6px 10px; color:var(--text2); cursor:pointer; font-size:11px; font-family:var(--font-mono); transition:all 0.1s; }
+.hist-toolbar button:hover { background:var(--bg4); color:var(--text); }
+.hist-toolbar button.active { background:var(--purple); color:#fff; border-color:var(--purple); }
+.hist-toolbar .spacer { flex:1; }
+
+/* Bulk delete bar */
+#bulk-bar { display:none; padding:10px 14px; background:var(--bg3); border:1px solid var(--border2); border-radius:8px; margin-bottom:10px; align-items:center; justify-content:space-between; }
+#bulk-bar .bulk-count { font-size:12px; font-family:var(--font-mono); color:var(--text2); }
+.bulk-del-btn { background:var(--red); color:#fff; border:none; border-radius:6px; padding:6px 14px; font-size:11px; font-family:var(--font-mono); cursor:pointer; font-weight:600; }
+
+/* Shift checkbox for bulk delete */
+.shift-checkbox { width:18px; height:18px; margin-right:8px; accent-color:var(--purple); flex-shrink:0; display:none; }
+.shift-checkbox.show { display:inline-block; }
+
+
 /* ── SCROLLBAR ── */
 ::-webkit-scrollbar { width:4px; }
 ::-webkit-scrollbar-track { background:transparent; }
@@ -790,7 +822,8 @@ html.theme-pro .kpi-card { border-left: 2px solid #222; }
 /* ── Misc ── */
 html.theme-pro #streak-flame,
 html.theme-pro .log-btn-icon,
-html.theme-pro .update-icon { display: none; }
+html.theme-pro .update-icon,
+html.theme-pro .danger-icon { display: none; }
 html.theme-pro .log-btn { justify-content: center; }
 html.theme-pro .mob-header {
   backdrop-filter: none;
@@ -888,11 +921,16 @@ html.theme-pro .bottom-nav {
     </div>
 
     <!-- KPIs -->
-    <div class="kpi-grid">
+    <div class="kpi-grid" style="grid-template-columns:1fr 1fr 1fr;">
       <div class="kpi-card gold">
         <div class="kpi-label">Today</div>
         <div class="kpi-value gold" id="kpi-today-pay">$0</div>
         <div class="kpi-sub" id="kpi-today-hrs">0h logged</div>
+      </div>
+      <div class="kpi-card teal">
+        <div class="kpi-label">This Pay Period</div>
+        <div class="kpi-value teal" id="kpi-pp-pay">$0</div>
+        <div class="kpi-sub" id="kpi-pp-hrs">0h this period</div>
       </div>
       <div class="kpi-card purple">
         <div class="kpi-label">This Week</div>
@@ -936,15 +974,18 @@ html.theme-pro .bottom-nav {
     <!-- Weekly bar chart -->
     <div class="card">
       <div class="card-title">This Week</div>
-      <div class="week-chart" id="week-chart"></div>
+      <div class="week-chart-wrap">
+        <div class="week-goal-line" id="week-goal-line" style="display:none;"></div>
+        <div class="week-chart" id="week-chart"></div>
+      </div>
       <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:9px;font-family:var(--font-mono);color:var(--text3);" id="week-labels"></div>
     </div>
 
     <!-- Recent shifts -->
     <div class="card">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-        <div class="card-title" style="margin-bottom:0;">Recent Shifts</div>
-        <button onclick="showPage('history')" style="background:none;border:none;color:var(--purple2);font-size:12px;font-family:var(--font-mono);cursor:pointer;">See all →</button>
+      <div class="card-title" style="margin-bottom:0;">Recent Shifts</div>
+      <button onclick="showPage('history')" style="background:none;border:none;color:var(--purple2);font-size:12px;font-family:var(--font-mono);cursor:pointer;">See all <span id="recent-count">0</span> →</button>
       </div>
       <div id="recent-shifts"></div>
     </div>
@@ -959,7 +1000,7 @@ html.theme-pro .bottom-nav {
       </div>
       <button class="btn btn-primary" style="flex:none;padding:10px 16px;font-size:13px;" onclick="openLogModal()">+ Log</button>
     </div>
-    <div class="kpi-grid" style="grid-template-columns:1fr 1fr 1fr;">
+    <div class="kpi-grid" style="grid-template-columns:1fr 1fr 1fr 1fr;">
       <div class="kpi-card purple">
         <div class="kpi-label">Total Shifts</div>
         <div class="kpi-value purple" id="hist-count">0</div>
@@ -969,9 +1010,33 @@ html.theme-pro .bottom-nav {
         <div class="kpi-value green" id="hist-hours">0h</div>
       </div>
       <div class="kpi-card gold">
-        <div class="kpi-label">Total Earned</div>
+        <div class="kpi-label">Gross Pay</div>
         <div class="kpi-value gold" id="hist-earned">$0</div>
       </div>
+      <div class="kpi-card teal">
+        <div class="kpi-label">Net Pay</div>
+        <div class="kpi-value teal" id="hist-net">$0</div>
+        <div class="kpi-sub" id="hist-tax-note"></div>
+      </div>
+    </div>
+    <div class="hist-toolbar">
+      <button id="sort-toggle" onclick="toggleSort()">↓ Newest</button>
+      <button onclick="exportCSV()">⬇ CSV</button>
+      <button onclick="showPayPeriodSummary()" id="btn-pp-summary">📊 Period Summary</button>
+      <span class="spacer"></span>
+      <button id="btn-bulk" onclick="toggleBulkMode()">☐ Bulk</button>
+    </div>
+    <div id="bulk-bar">
+      <span class="bulk-count" id="bulk-count">0 selected</span>
+      <button class="bulk-del-btn" onclick="deleteSelected()">Delete Selected</button>
+      <button style="background:var(--bg4);color:var(--text2);border:none;border-radius:6px;padding:6px 10px;font-size:11px;font-family:var(--font-mono);cursor:pointer;" onclick="toggleBulkMode()">Cancel</button>
+    </div>
+    <div class="card" id="pp-summary">
+      <div class="pp-summary-head">
+        <span id="pp-summary-title">Pay Period Summary</span>
+        <button style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;" onclick="closePPSummary()">✕</button>
+      </div>
+      <div id="pp-summary-body"></div>
     </div>
     <div class="card" style="margin-bottom:14px;">
       <div class="card-title">Calendar</div>
@@ -998,6 +1063,7 @@ html.theme-pro .bottom-nav {
         <div class="day-bd-item"><div class="day-bd-label">OT Hours</div><div class="day-bd-value" id="bd-ot-hours">—</div></div>
         <div class="day-bd-item"><div class="day-bd-label">Regular Pay</div><div class="day-bd-value" id="bd-reg-pay">—</div></div>
         <div class="day-bd-item"><div class="day-bd-label">OT Pay</div><div class="day-bd-value" id="bd-ot-pay">—</div></div>
+        <div class="day-bd-item"><div class="day-bd-label">Net Pay</div><div class="day-bd-value" id="bd-net-pay" style="color:var(--teal);">—</div></div>
         <div class="day-bd-item" style="grid-column:1/-1;background:var(--bg4);"><div class="day-bd-label">Total Income</div><div class="day-bd-value" id="bd-total-pay" style="font-size:24px;color:var(--green);">—</div></div>
       </div>
     </div>
@@ -1153,7 +1219,7 @@ html.theme-pro .bottom-nav {
       <button class="signout-btn" onclick="doSignOut()">Sign Out</button>
       <button class="signout-btn" style="border-color:var(--purple);color:var(--purple2);background:rgba(124,92,252,0.05);margin-top:4px;" onclick="checkForUpdates()"><span class="update-icon">🔄</span> Check for Updates</button>
       <div style="border-top:1px solid var(--border);margin:14px 0;padding-top:6px;">
-        <div style="font-size:9px;letter-spacing:2.5px;text-transform:uppercase;font-family:var(--font-mono);color:var(--text3);margin-bottom:8px;text-align:center;">⚠️ Danger Zone</div>
+        <div style="font-size:9px;letter-spacing:2.5px;text-transform:uppercase;font-family:var(--font-mono);color:var(--text3);margin-bottom:8px;text-align:center;"><span class="danger-icon">⚠️</span> Danger Zone</div>
         <button class="signout-btn" style="border-color:var(--red);" onclick="sfConfirm('⚠️','Reset All Data','This will permanently delete all shifts, XP, achievements, and settings. This cannot be undone.',resetAllData,'danger')">Reset All Data</button>
       </div>
     </div>
@@ -1801,9 +1867,11 @@ function calcAggregatePay(shifts) {
 
 function shiftsByPeriod(period) {
   const now=new Date();
+  const ppKey = period==='payperiod' ? getPayPeriodKey(today()) : null;
   return D.shifts.filter(s=>{
     const d=new Date(s.date+'T12:00:00');
     if(period==='today') return s.date===today();
+    if(period==='payperiod') return getPayPeriodKey(s.date) === ppKey;
     if(period==='week') {
       const mon=new Date(now); mon.setDate(now.getDate()-now.getDay()+1); mon.setHours(0,0,0,0);
       return d>=mon;
@@ -2022,19 +2090,28 @@ function renderHome() {
 
   // KPIs
   const todayShifts=shiftsByPeriod('today');
+  const ppShifts=shiftsByPeriod('payperiod');
   const weekShifts=shiftsByPeriod('week');
   const monthShifts=shiftsByPeriod('month');
   const allShifts=D.shifts;
+  const taxRate = (D.settings.taxRate||0)/100;
 
   const sum=(arr,k)=>arr.reduce((s,x)=>s+parseFloat(x[k]||0),0);
+  const fmtNet = gross => fmt(gross * (1 - taxRate));
   document.getElementById('kpi-today-pay').textContent=fmt(calcAggregatePay(todayShifts));
   document.getElementById('kpi-today-hrs').textContent=fmtHrs(sum(todayShifts,'hours'))+' logged';
+  const ppPay = calcAggregatePay(ppShifts);
+  document.getElementById('kpi-pp-pay').textContent=fmt(ppPay);
+  document.getElementById('kpi-pp-hrs').textContent=fmtHrs(sum(ppShifts,'hours'))+' this period';
   document.getElementById('kpi-week-pay').textContent=fmt(calcAggregatePay(weekShifts));
   document.getElementById('kpi-week-hrs').textContent=fmtHrs(sum(weekShifts,'hours'))+' this week';
   document.getElementById('kpi-month-pay').textContent=fmt(calcAggregatePay(monthShifts));
   document.getElementById('kpi-month-hrs').textContent=fmtHrs(sum(monthShifts,'hours'))+' this month';
   document.getElementById('kpi-total-pay').textContent=fmt(calcAggregatePay(allShifts));
   document.getElementById('kpi-total-hrs').textContent=fmtHrs(sum(allShifts,'hours'))+' total';
+
+  // Recent shift count
+  document.getElementById('recent-count').textContent = D.shifts.length;
 
   // Weekly chart
   renderWeekChart();
@@ -2048,9 +2125,12 @@ function renderHome() {
   }
 }
 
-function shiftHTML(s) {
+function shiftHTML(s, sel) {
   const isToday=s.date===today();
+  const checked = sel && sel.has(s.id) ? 'checked' : '';
+  const cb = sel ? `<input type="checkbox" class="shift-checkbox show" ${checked} onchange="toggleBulkSelect('${s.id}')">` : '';
   return `<div class="shift-item">
+    ${cb}
     <div class="shift-dot ${isToday?'today':''}"></div>
     <div class="shift-info">
       <div class="shift-date">${s.job||'Shift'} · ${new Date(s.date+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'})}</div>
@@ -2068,8 +2148,7 @@ function shiftHTML(s) {
 function renderWeekChart() {
   const now=new Date();
   const days=['M','T','W','T','F','S','S'];
-  const dow=now.getDay(); // 0=Sun
-  // Build last 7 days
+  const dow=now.getDay();
   const cols=[];
   for(let i=6;i>=0;i--) {
     const d=new Date(now); d.setDate(now.getDate()-i);
@@ -2083,10 +2162,29 @@ function renderWeekChart() {
       <div class="week-bar ${c.isToday?'today':''}" style="height:${Math.max(4,(c.hrs/maxH)*68)}px" title="${fmtHrs(c.hrs)}"></div>
     </div>`).join('');
   document.getElementById('week-labels').innerHTML=cols.map(c=>`<span>${c.label}</span>`).join('');
+
+  // Goal line
+  const goal = D.settings.weeklyGoal || 40;
+  const goalLine = document.getElementById('week-goal-line');
+  if(goalLine) {
+    const goalHrPct = Math.min(1, goal / (maxH || 1));
+    goalLine.style.bottom = (goalHrPct * 68) + 'px';
+    goalLine.style.display = goal > 0 ? 'block' : 'none';
+  }
+}
+  const maxH=Math.max(...cols.map(c=>c.hrs),1);
+  document.getElementById('week-chart').innerHTML=cols.map(c=>`
+    <div class="week-bar-wrap">
+      <div class="week-bar ${c.isToday?'today':''}" style="height:${Math.max(4,(c.hrs/maxH)*68)}px" title="${fmtHrs(c.hrs)}"></div>
+    </div>`).join('');
+  document.getElementById('week-labels').innerHTML=cols.map(c=>`<span>${c.label}</span>`).join('');
 }
 
 // ── History Filter ──
 let historyFilter = { year:null, quarter:null, month:null, week:null, day:null };
+let _sortAsc = false;
+let _bulkMode = false;
+let _bulkSelected = new Set();
 
 function getWeekNumber(d) {
   d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
@@ -2122,17 +2220,127 @@ function getFilterLabel() {
 
 function renderHistory() {
   const filtered = getFilteredShifts();
-  const all = filtered;
+  let all = filtered;
+  if(_sortAsc) all = [...all].reverse();
   const sum=(k)=>all.reduce((s,x)=>s+parseFloat(x[k]||0),0);
+  const gross = calcAggregatePay(all);
+  const taxRate = (D.settings.taxRate||0)/100;
+  const net = gross * (1 - taxRate);
   document.getElementById('hist-count').textContent=all.length;
   document.getElementById('hist-hours').textContent=fmtHrs(sum('hours'));
-  document.getElementById('hist-earned').textContent=fmt(calcAggregatePay(all));
+  document.getElementById('hist-earned').textContent=fmt(gross);
+  document.getElementById('hist-net').textContent=fmt(net);
+  document.getElementById('hist-tax-note').textContent = D.settings.taxRate ? `after ${D.settings.taxRate}% tax` : '';
+
+  // Sort toggle
+  document.getElementById('sort-toggle').textContent = _sortAsc ? '↑ Oldest' : '↓ Newest';
+
+  // Bulk bar
+  const bulkBar = document.getElementById('bulk-bar');
+  if(_bulkMode) { bulkBar.style.display='flex'; } else { bulkBar.style.display='none'; }
+  document.getElementById('bulk-count').textContent = _bulkSelected.size + ' selected';
+  document.getElementById('btn-bulk').textContent = _bulkMode ? '☑ Done' : '☐ Bulk';
 
   if(!all.length) {
     document.getElementById('history-list').innerHTML=`<div class="empty"><div class="empty-icon">📋</div><div class="empty-title">${D.shifts.length?'No shifts match filter':'No shifts logged'}</div><div class="empty-sub">${D.shifts.length?'Try a different date range':'Start tracking to see history here'}</div></div>`;
     return;
   }
-  document.getElementById('history-list').innerHTML=all.map(s=>shiftHTML(s)).join('');
+  const showCB = _bulkMode;
+  document.getElementById('history-list').innerHTML=all.map(s => shiftHTML(s, showCB ? _bulkSelected : null)).join('');
+}
+
+// ── History Toolbar ──
+function toggleSort() {
+  _sortAsc = !_sortAsc;
+  // Clear day selection when toggling sort
+  _selectedDay = null;
+  historyFilter = { year:null, quarter:null, month:null, week:null, day:null };
+  document.getElementById('day-breakdown').style.display = 'none';
+  renderCalendar();
+  renderHistory();
+}
+
+function exportCSV() {
+  const rows = [['Date','Start','End','Hours','Rate','Pay','Job','Notes','XP']];
+  D.shifts.forEach(s => {
+    rows.push([s.date, s.startTime||'', s.endTime||'', s.hours, s.rate||'', s.pay||'', s.job||'', s.notes||'', s.xp||0]);
+  });
+  const csv = rows.map(r => r.map(c => '"' + String(c).replace(/"/g,'""') + '"').join(',')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'ShiftForge_export_' + today() + '.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
+}
+
+function showPayPeriodSummary() {
+  const card = document.getElementById('pp-summary');
+  if(card.style.display === 'block') { card.style.display = 'none'; return; }
+  const groups = {};
+  D.shifts.forEach(s => {
+    const k = getPayPeriodKey(s.date);
+    if(!groups[k]) groups[k] = [];
+    groups[k].push(s);
+  });
+  const sorted = Object.keys(groups).sort();
+  const threshold = D.settings.overtimeThreshold || 0;
+  const otRate = D.settings.overtimeRate || 0;
+  const baseRate = D.settings.rate || 0;
+  const taxRate = (D.settings.taxRate||0)/100;
+  document.getElementById('pp-summary-title').textContent = 'Pay Period Summary (' + sorted.length + ' periods)';
+  document.getElementById('pp-summary-body').innerHTML = sorted.map(k => {
+    const shifts = groups[k];
+    const totalHrs = shifts.reduce((s,x)=>s+parseFloat(x.hours||0),0);
+    const otHrs = threshold && otRate ? Math.max(0, totalHrs - threshold) : 0;
+    const regHrs = totalHrs - otHrs;
+    const regPay = regHrs * baseRate;
+    const otPay = otHrs * otRate;
+    const gross = regPay + otPay;
+    const net = gross * (1 - taxRate);
+    return `<div class="pp-summary-item">
+      <div class="pp-summary-period">${k}</div>
+      <div class="pp-summary-detail">
+        <span>${fmtHrs(totalHrs)} hrs</span>
+        ${otHrs>0?`<span style="color:var(--orange);">${fmtHrs(otHrs)} OT</span>`:''}
+        <span>Gross: ${fmt(gross)}</span>
+        ${taxRate>0?`<span>Net: ${fmt(net)}</span>`:''}
+        <span>${shifts.length} shift${shifts.length!==1?'s':''}</span>
+      </div>
+    </div>`;
+  }).join('');
+  card.style.display = 'block';
+}
+
+function closePPSummary() {
+  document.getElementById('pp-summary').style.display = 'none';
+}
+
+function toggleBulkMode() {
+  _bulkMode = !_bulkMode;
+  if(!_bulkMode) _bulkSelected.clear();
+  renderHistory();
+}
+
+function toggleBulkSelect(id) {
+  if(_bulkSelected.has(id)) _bulkSelected.delete(id); else _bulkSelected.add(id);
+  document.getElementById('bulk-count').textContent = _bulkSelected.size + ' selected';
+}
+
+function deleteSelected() {
+  if(!_bulkSelected.size) return;
+  sfConfirm('🗑️','Delete Selected','Delete ' + _bulkSelected.size + ' selected shift' + (_bulkSelected.size>1?'s':'') + '?', () => {
+    _bulkSelected.forEach(id => {
+      const s = D.shifts.find(x => x.id === id);
+      if(s) D.xp = Math.max(0, D.xp - (s.xp||0));
+    });
+    D.shifts = D.shifts.filter(x => !_bulkSelected.has(x.id));
+    D.level = calcLevel(D.xp);
+    _bulkSelected.clear();
+    _bulkMode = false;
+    save();
+    renderAll();
+  }, 'danger');
 }
 
 // ── Calendar ──
@@ -2212,6 +2420,8 @@ function selectDay(dateStr) {
   document.getElementById('bd-reg-pay').textContent = fmt(breakdown.regularPay);
   document.getElementById('bd-ot-pay').textContent = fmt(breakdown.otPay);
   document.getElementById('bd-total-pay').textContent = fmt(breakdown.totalPay);
+  const taxRate = (D.settings.taxRate||0)/100;
+  document.getElementById('bd-net-pay').textContent = taxRate ? fmt(breakdown.totalPay * (1 - taxRate)) : '—';
   document.getElementById('day-breakdown').style.display = 'block';
 }
 
