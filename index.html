@@ -599,6 +599,9 @@ body::before {
 .cal-day.selected { background:var(--purple); color:#fff; }
 .cal-day.selected.has-shift::after { background:#fff; }
 .cal-day.selected:hover { background:var(--purple); }
+.cal-day.in-pp { background: rgba(124,92,252,0.12); }
+.cal-day.in-pp.today { background: rgba(124,92,252,0.15); }
+.cal-day.in-pp.other-month { opacity:0.6; }
 .cal-day-wrap { display:contents; }
 
 /* Calendar day breakdown card */
@@ -2352,6 +2355,7 @@ function renderCalendar() {
   const daysInPrev = new Date(_calYear, _calMonth, 0).getDate();
   const todayStr = today();
   const shiftDates = new Set(D.shifts.map(s => s.date));
+  const ppKey = getPayPeriodKey(todayStr);
   let html = '<div class="cal-header">S</div><div class="cal-header">M</div><div class="cal-header">T</div><div class="cal-header">W</div><div class="cal-header">T</div><div class="cal-header">F</div><div class="cal-header">S</div>';
   const selStr = _selectedDay;
 
@@ -2361,7 +2365,8 @@ function renderCalendar() {
     const m = _calMonth-1 < 0 ? 11 : _calMonth-1;
     const y = _calMonth-1 < 0 ? _calYear-1 : _calYear;
     const ds = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    html += `<div class="cal-day other-month" onclick="selectDay('${ds}')">${d}</div>`;
+    const pmCls='cal-day other-month'+(getPayPeriodKey(ds)===ppKey?' in-pp':'');
+    html += `<div class="${pmCls}" onclick="selectDay('${ds}')">${d}</div>`;
   }
 
   // Current month days
@@ -2371,6 +2376,7 @@ function renderCalendar() {
     if(ds === todayStr) cls += ' today';
     if(shiftDates.has(ds)) cls += ' has-shift';
     if(ds === selStr) cls += ' selected';
+    if(getPayPeriodKey(ds)===ppKey) cls += ' in-pp';
     html += `<div class="${cls}" onclick="selectDay('${ds}')">${d}</div>`;
   }
 
@@ -2381,7 +2387,8 @@ function renderCalendar() {
     const m = _calMonth+1 > 11 ? 0 : _calMonth+1;
     const y = _calMonth+1 > 11 ? _calYear+1 : _calYear;
     const ds = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    html += `<div class="cal-day other-month" onclick="selectDay('${ds}')">${d}</div>`;
+    const nmCls='cal-day other-month'+(getPayPeriodKey(ds)===ppKey?' in-pp':'');
+    html += `<div class="${nmCls}" onclick="selectDay('${ds}')">${d}</div>`;
   }
   grid.innerHTML = html;
 }
