@@ -519,8 +519,8 @@ body::before {
   margin-bottom:14px; text-align:center;
 }
 #clock-time-display {
-  font-family:var(--font-display); font-size:56px;
-  letter-spacing:4px; line-height:1;
+  font-family:var(--font-display); font-size:clamp(36px,9.5vw,56px);
+  letter-spacing:2px; line-height:1; white-space:nowrap;
   background:linear-gradient(135deg,var(--text),var(--text2));
   -webkit-background-clip:text; -webkit-text-fill-color:transparent;
 }
@@ -2669,6 +2669,8 @@ function tickClock() {
 }
 
 function startClock() {
+  const tel=document.getElementById('clock-time-display');
+  if(tel){tel.style.removeProperty('background');tel.style.removeProperty('-webkit-background-clip');}
   tickClock();
   if(clockInterval) clearInterval(clockInterval);
   clockInterval = setInterval(tickClock, 1000);
@@ -2691,13 +2693,8 @@ function doClock(action) {
     status.className   = 'clock-status clocked-in';
     sendNotification('Clocked In ✅', `Started at ${clockInTime.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'})}`);
 
-    // Animate the clock in button briefly
     const btn = document.getElementById('btn-clock-in');
     btn.textContent = 'CLOCKED IN ✓';
-    // Pulse the time green
-    const timeEl = document.getElementById('clock-time-display');
-    timeEl.style.background = 'linear-gradient(135deg,var(--green),var(--teal))';
-    timeEl.style.webkitBackgroundClip = 'text';
   } else {
     if(!clockInTime) return;
     const clockOutTime = new Date();
@@ -2729,9 +2726,6 @@ function doClock(action) {
     const status = document.getElementById('clock-status');
     status.textContent = 'Shift ended — confirm below';
     status.className   = 'clock-status';
-    const timeEl = document.getElementById('clock-time-display');
-    timeEl.style.background = 'linear-gradient(135deg,var(--text),var(--text2))';
-    timeEl.style.webkitBackgroundClip = 'text';
   }
 }
 
