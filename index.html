@@ -2677,11 +2677,11 @@ function startClock() {
   clockInterval = setInterval(tickClock, 1000);
 }
 
-// ── Cross-device clock sync ──
+// ── Cross-device clock & data sync ──
 let _deviceId = null;
-let _clockBC = null;
 let _clockPollTimer = null;
-let _clockLastState = null; // last known remote state fingerprint
+let _clockLastState = null;
+let _dataFingerprint = '';
 
 function getDeviceId() {
   if(!_deviceId) {
@@ -2692,17 +2692,24 @@ function getDeviceId() {
 }
 
 function initClockSync() {
-  // Cross-tab sync (same browser, different tabs)
-  if(typeof BroadcastChannel!=='undefined') try {
-    _clockBC = new BroadcastChannel('shiftforge-clock');
-    _clockBC.onmessage = e => {
-      if(e.data.uid!==_uid || e.data.device===getDeviceId()) return;
-      if(e.data.action==='in' && !clockInTime) doClock('in','remote');
-      else if(e.data.action==='out' && clockInTime) doClock('out','remote');
-    };
-  } catch(e) {}
+  // Same-browser cross-tab via localStorage events
+  window.addEventListener('storage', e => {
+    if(e.key==='sf_data' && e.newValue) {
+      try {
+        const p=JSON.parse(e.newValue);
+        const sameDevice = p._deviceId === getDeviceId();
+        if(!sameDevice && _uid) {
+          const wasIn=!!clockInTime;
+          D.shifts=p.shifts; D.xp=p.xp; D.level=p.level; D.streak=p.streak; D.bestStreak=p.bestStreak;
+          if(p._clockState) D._clockState=p._clockState;
+          renderAll();
+          if(p._clockState?.active && !wasIn && p._clockState.device!==getDeviceId()) doClock('in','remote');
+          else if(!p._clockState?.active && wasIn && p._clockState?.device!==getDeviceId()) doClock('out','remote');
+        }
+      } catch(e){}
+    }
+  });
 
-  // Cross-device polling via Supabase sf_data
   if(_sb && _uid) clockPoll();
 }
 
@@ -2712,8 +2719,11 @@ function clockPoll() {
   _clockPollTimer = setTimeout(async () => {
     try {
       const {data} = await _sb.from('sf_data').select('payload').eq('id',_uid).maybeSingle();
-      if(data?.payload?._clockState) {
-        const r = data.payload._clockState;
+      if(!data?.payload) return;
+
+      // Clock state sync
+      const r = data.payload._clockState;
+      if(r) {
         const fp = (r.active?'1':'0')+':'+(r.time||'')+':'+(r.device||'');
         if(fp !== _clockLastState) {
           _clockLastState = fp;
@@ -2725,19 +2735,32 @@ function clockPoll() {
           }
         }
       }
+
+      // Shift data sync
+      const remote = data.payload;
+      const fp2 = (remote.shifts?.length||0)+':'+(remote.shifts?.[0]?.id||'')+':'+remote.xp;
+      if(fp2 !== _dataFingerprint && fp2 !== ':') {
+        _dataFingerprint = fp2;
+        const localLen = D.shifts.length;
+        if(remote.shifts && (remote.shifts.length!==localLen || remote.shifts[0]?.id!==D.shifts[0]?.id)) {
+          D.shifts = remote.shifts;
+          D.xp = remote.xp;
+          D.level = remote.level;
+          D.streak = remote.streak;
+          D.bestStreak = remote.bestStreak;
+          localStorage.setItem('sf_data', JSON.stringify(D));
+          renderAll();
+        }
+      }
     } catch(e) {}
     clockPoll();
-  }, 4000);
+  }, 3000);
 }
 
 function sendClockSync(action) {
-  // Store state in D for Supabase sync (existing save() pushes it)
   if(action==='in') D._clockState = {active:true,time:clockInTime.toISOString(),device:getDeviceId()};
   else D._clockState = {active:false,device:getDeviceId()};
-  save(); // pushes to Supabase via existing _saveTimer
-
-  // Same-browser cross-tab
-  if(_clockBC) try { _clockBC.postMessage({action,uid:_uid,device:getDeviceId()}); } catch(e) {}
+  save();
 }
 
 function doClock(action,source='local') {
